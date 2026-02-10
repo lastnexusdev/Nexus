@@ -98,6 +98,17 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Clients page now uses a **select-first** workflow:
   - search/select client first
   - then load only that client's management workspace (instead of always listing all clients).
+  - once selected, the search/create area is hidden and a **Return to Client List** button appears.
+
+
+## Admin Client File Manager (Dedicated View)
+
+- Inside a selected client workspace, **Client Visible Files** opens a dedicated in-page file manager view.
+- The file manager now behaves like a folder browser:
+  - shows visible directories first
+  - click a directory to drill into files
+  - use **Back to folders** to navigate up
+- This keeps the core client workspace cleaner while making file navigation practical for larger accounts.
 
 
 ## Client Portal UI Refresh

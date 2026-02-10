@@ -6,7 +6,8 @@ const state = {
   selected: null,
   selectedId: null,
   view: 'dashboard',
-  pickerQuery: ''
+  pickerQuery: '',
+  fileManagerFolder: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -86,10 +87,7 @@ function renderDashboard() {
     ['Filed', state.dash.filed],
     ['Extensions', state.dash.extensions]
   ]
-    .map(
-      ([l, v]) =>
-        `<div class="kpi"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div></div>`
-    )
+    .map(([l, v]) => `<div class="kpi"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div></div>`)
     .join('');
 
   const statusEntries = Object.entries(state.dash.returnsByStatus || {});
@@ -105,27 +103,18 @@ function renderDashboard() {
   $('riskNotices').innerHTML =
     notices
       .slice(0, 8)
-      .map(
-        (n) =>
-          `<div class="item notice-${n.level}"><div class="row"><b>${esc(n.name)}</b><span class="pill">${esc(n.status)}</span></div><div class="small muted">Missing docs: ${n.missingCount}</div><div class="small">${esc(n.message)}</div></div>`
-      )
+      .map((n) => `<div class="item notice-${n.level}"><div class="row"><b>${esc(n.name)}</b><span class="pill">${esc(n.status)}</span></div><div class="small muted">Missing docs: ${n.missingCount}</div><div class="small">${esc(n.message)}</div></div>`)
       .join('') || '<div class="small muted">No notices.</div>';
 
   $('missingQueue').innerHTML =
     (state.dash.missing || [])
       .slice(0, 12)
-      .map(
-        (m) =>
-          `<div class="warn"><b>${esc(m.name)}</b><div class="small muted">${esc(m.missing.join(', '))}</div></div>`
-      )
+      .map((m) => `<div class="warn"><b>${esc(m.name)}</b><div class="small muted">${esc(m.missing.join(', '))}</div></div>`)
       .join('') || '<div class="small muted">No missing docs.</div>';
 
   $('audit').innerHTML =
     (state.dash.audit || [])
-      .map(
-        (a) =>
-          `<div class="item"><div class="small muted">${esc(a.at)}</div><div>${esc(a.action)} · ${esc(a.actor)}</div></div>`
-      )
+      .map((a) => `<div class="item"><div class="small muted">${esc(a.at)}</div><div>${esc(a.action)} · ${esc(a.actor)}</div></div>`)
       .join('') || '<div class="small muted">No audit entries.</div>';
 }
 
@@ -133,10 +122,7 @@ function renderNoticesPage() {
   const notices = buildNotices();
   $('noticeBoard').innerHTML =
     notices
-      .map(
-        (n) =>
-          `<div class="item notice-${n.level}"><div class="row"><b>${esc(n.name)}</b><span class="pill">${esc(n.status)}</span></div><div class="small muted">Missing docs: ${n.missingCount}</div><div>${esc(n.message)}</div></div>`
-      )
+      .map((n) => `<div class="item notice-${n.level}"><div class="row"><b>${esc(n.name)}</b><span class="pill">${esc(n.status)}</span></div><div class="small muted">Missing docs: ${n.missingCount}</div><div>${esc(n.message)}</div></div>`)
       .join('') || '<div class="small muted">No notices.</div>';
 }
 
@@ -144,10 +130,7 @@ function filteredClients() {
   const q = state.pickerQuery.trim().toLowerCase();
   if (!q) return [];
   return state.clients.filter((c) =>
-    [c.name, c.status, c.entityType, c.assignedStaff, ...(c.identifiers || [])]
-      .join(' ')
-      .toLowerCase()
-      .includes(q)
+    [c.name, c.status, c.entityType, c.assignedStaff, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)
   );
 }
 
@@ -155,11 +138,8 @@ function renderPicker() {
   const rows = filteredClients();
   $('pickerResults').innerHTML =
     rows
-      .slice(0, 25)
-      .map(
-        (c) =>
-          `<div class="item"><div class="row"><b>${esc(c.name)}</b><span class="pill">${esc(c.status)}</span></div><div class="small muted">${esc(c.entityType)} · ${esc(c.assignedStaff || 'Unassigned')}</div><div class="row" style="margin-top:6px;"><button class="selectClientBtn" data-id="${esc(c.id)}" style="width:auto;">Select Client</button></div></div>`
-      )
+      .slice(0, 30)
+      .map((c) => `<div class="item"><div class="row"><b>${esc(c.name)}</b><span class="pill">${esc(c.status)}</span></div><div class="small muted">${esc(c.entityType)} · ${esc(c.assignedStaff || 'Unassigned')}</div><div class="row" style="margin-top:6px;"><button class="selectClientBtn" data-id="${esc(c.id)}" style="width:auto;">Select Client</button></div></div>`)
       .join('');
 
   if (!rows.length && state.pickerQuery.trim()) {
@@ -172,37 +152,60 @@ function renderPicker() {
       await loadSelected();
       state.pickerQuery = '';
       $('search').value = '';
+      state.fileManagerFolder = null;
       renderClientsPage();
     };
   });
 }
 
-function renderClientsPage() {
-  renderPicker();
+function filesByFolder(client) {
+  const grouped = new Map();
+  for (const f of client.files || []) {
+    if (f.internalOnly) continue;
+    if (!grouped.has(f.category)) grouped.set(f.category, []);
+    grouped.get(f.category).push(f);
+  }
+  return grouped;
+}
 
-  if (!state.selected) {
-    $('selectedPane').style.display = 'none';
+function renderClientFilesPage() {
+  if (!state.selected) return;
+  const grouped = filesByFolder(state.selected);
+  const folders = Array.from(grouped.keys()).sort();
+
+  const crumb = state.fileManagerFolder
+    ? `Client Visible Files / ${state.fileManagerFolder}`
+    : 'Client Visible Files / folders';
+  $('fileManagerBreadcrumb').textContent = crumb;
+
+  if (!state.fileManagerFolder) {
+    $('fileManagerFolders').style.display = 'block';
+    $('fileManagerFiles').style.display = 'none';
+    $('fileManagerFolders').innerHTML = folders.length
+      ? folders.map((folder) => `<button class="folder-btn" data-folder="${esc(folder)}">📁 ${esc(folder)} (${grouped.get(folder).length})</button>`).join('')
+      : '<div class="small muted">No client-visible files found.</div>';
+
+    document.querySelectorAll('.folder-btn').forEach((el) => {
+      el.onclick = () => {
+        state.fileManagerFolder = el.getAttribute('data-folder');
+        renderClientFilesPage();
+      };
+    });
     return;
   }
 
-  $('selectedPane').style.display = 'grid';
-  $('selTitle').textContent = state.selected.name;
-  $('selInternal').textContent = `Internal ID: ${state.selected.clientInternalId}`;
-  $('statusSelect').innerHTML = state.meta.statuses
-    .map((s) => `<option ${s === state.selected.status ? 'selected' : ''}>${esc(s)}</option>`)
-    .join('');
-  $('folderSelect').innerHTML = state.meta.folders.map((f) => `<option>${esc(f)}</option>`).join('');
-  $('checklist').innerHTML = (state.selected.checklist || [])
-    .map((i) => `<div class="row"><span>${esc(i.doc)}</span><b>${i.found ? '✓' : 'Missing'}</b></div>`)
-    .join('');
-  $('files').innerHTML =
-    (state.selected.files || [])
-      .filter((f) => !f.internalOnly)
-      .map(
-        (f) =>
-          `<div class="item"><div class="row"><b>${esc(f.originalName)}</b><button class="viewFileBtn" data-id="${esc(f.id)}" style="width:auto;padding:5px 10px;">View</button></div><div class="small muted">${esc(f.category)} v${esc(f.version)} • ${esc(f.source)}</div></div>`
-      )
-      .join('') || '<div class="small muted">No files yet.</div>';
+  const files = grouped.get(state.fileManagerFolder) || [];
+  $('fileManagerFolders').style.display = 'none';
+  $('fileManagerFiles').style.display = 'block';
+  $('fileManagerFiles').innerHTML = `
+    <button id="backToFoldersBtn" style="width:auto;margin-bottom:8px;">← Back to folders</button>
+    ${files.map((f) => `<div class="file-row"><div><b>${esc(f.originalName)}</b><div class="small muted">v${esc(f.version)} • ${esc(f.source)} • ${esc(f.uploadedAt || '')}</div></div><button class="viewFileBtn" data-id="${esc(f.id)}" style="width:auto;">View</button></div>`).join('')}
+  `;
+
+  $('backToFoldersBtn').onclick = () => {
+    state.fileManagerFolder = null;
+    renderClientFilesPage();
+  };
 
   document.querySelectorAll('.viewFileBtn').forEach((el) => {
     el.onclick = async () => {
@@ -221,6 +224,32 @@ function renderClientsPage() {
       }
     };
   });
+}
+
+function renderClientsPage() {
+  renderPicker();
+
+  const hasSelected = Boolean(state.selected);
+  $('clientsSelectMode').style.display = hasSelected ? 'none' : 'grid';
+  $('clientSelectedHeader').style.display = hasSelected ? 'block' : 'none';
+  $('selectedPane').style.display = hasSelected ? 'grid' : 'none';
+
+  if (!hasSelected) {
+    $('clientFilesPage').style.display = 'none';
+    return;
+  }
+
+  $('selectedClientName').textContent = state.selected.name;
+  $('selectedClientMeta').textContent = `${state.selected.entityType} · ${state.selected.status} · ${state.selected.assignedStaff || 'Unassigned'}`;
+  $('selTitle').textContent = state.selected.name;
+  $('selInternal').textContent = `Internal ID: ${state.selected.clientInternalId}`;
+  $('statusSelect').innerHTML = state.meta.statuses.map((s) => `<option ${s === state.selected.status ? 'selected' : ''}>${esc(s)}</option>`).join('');
+  $('folderSelect').innerHTML = state.meta.folders.map((f) => `<option>${esc(f)}</option>`).join('');
+  $('checklist').innerHTML = (state.selected.checklist || []).map((i) => `<div class="row"><span>${esc(i.doc)}</span><b>${i.found ? '✓' : 'Missing'}</b></div>`).join('');
+
+  if ($('clientFilesPage').style.display === 'block') {
+    renderClientFilesPage();
+  }
 }
 
 function renderAll() {
@@ -289,10 +318,7 @@ $('createClient').onclick = async () => {
       body: JSON.stringify({
         name: $('newName').value.trim(),
         entityType: $('newEntity').value,
-        taxYears: $('newYears').value
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
+        taxYears: $('newYears').value.split(',').map((s) => s.trim()).filter(Boolean),
         assignedStaff: $('newStaff').value.trim()
       })
     });
@@ -356,6 +382,25 @@ $('saveNote').onclick = async () => {
 $('openPortal').onclick = () => {
   if (!state.selected) return;
   window.location.href = `/portal?code=${encodeURIComponent(state.selected.portalCode)}&from=admin`;
+};
+
+$('returnToListBtn').onclick = () => {
+  state.selected = null;
+  state.selectedId = null;
+  state.fileManagerFolder = null;
+  $('clientFilesPage').style.display = 'none';
+  renderClientsPage();
+};
+
+$('openClientFilesBtn').onclick = () => {
+  if (!state.selected) return;
+  state.fileManagerFolder = null;
+  $('clientFilesPage').style.display = 'block';
+  renderClientFilesPage();
+};
+
+$('closeClientFilesBtn').onclick = () => {
+  $('clientFilesPage').style.display = 'none';
 };
 
 setView('dashboard');

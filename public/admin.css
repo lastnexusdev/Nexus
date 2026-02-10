@@ -7,7 +7,6 @@
   --line: #d8dde6;
   --text: #1e2535;
   --muted: #6a7386;
-  --blue: #202743;
   --accent: #7d1a0c;
   --green: #49a958;
   --red: #c84444;
@@ -65,7 +64,7 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .list { max-height: 290px; overflow: auto; margin-top: 8px; }
 .list.compact { max-height: 190px; }
 .item { border: 1px solid #e5e9f3; border-radius: 8px; padding: 9px; margin-bottom: 8px; background: #fff; }
-.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pill { background: #ecf0fb; color: #4259ac; border-radius: 999px; font-size: 11px; padding: 3px 7px; }
 .small { font-size: 12px; }
 .muted { color: var(--muted); }
@@ -77,6 +76,9 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 input, select, textarea, button { width: 100%; border: 1px solid #cfd7e8; border-radius: 8px; padding: 9px; margin-top: 8px; }
 button { cursor: pointer; background: #eef2ff; color: #2d4db0; }
 button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c); color: white; }
+
+#clientFilesPage .folder-btn { display:block; width:100%; text-align:left; margin:0 0 8px 0; }
+#clientFilesPage .file-row { display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid #e5e9f3; border-radius:8px; padding:8px; margin-bottom:8px; }
 
 @media (max-width: 1250px) {
   .app-shell { grid-template-columns: 1fr; }

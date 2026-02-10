@@ -91,7 +91,7 @@
           </section>
 
           <section id="viewClients" class="view" style="display:none">
-            <div class="grid two">
+            <div id="clientsSelectMode" class="grid two">
               <article class="card">
                 <h3>Select Client</h3>
                 <p class="small muted">Step 1: search and select one client. The full directory is hidden until you search.</p>
@@ -109,12 +109,26 @@
               </article>
             </div>
 
+            <div id="clientSelectedHeader" class="card" style="display:none">
+              <div class="row">
+                <div>
+                  <h3 id="selectedClientName" style="margin:0;"></h3>
+                  <div id="selectedClientMeta" class="small muted"></div>
+                </div>
+                <div class="row" style="gap:6px;">
+                  <button id="returnToListBtn" style="width:auto;">Return to Client List</button>
+                  <button id="openPortal" style="width:auto;">Open Portal</button>
+                  <button id="openClientFilesBtn" class="primary" style="width:auto;">Client Visible Files</button>
+                </div>
+              </div>
+            </div>
+
             <div id="selectedPane" class="grid two" style="display:none">
               <article class="card">
                 <h3 id="selTitle"></h3>
                 <div id="selInternal" class="small muted"></div>
                 <div class="row" style="margin-top:8px;">
-                  <button id="openPortal" style="width:auto">Open Portal</button>
+                  <label class="small muted" style="margin:0;">Status</label>
                   <select id="statusSelect"></select>
                 </div>
 
@@ -128,8 +142,7 @@
               </article>
 
               <article class="card">
-                <h3>Client Visible Files</h3>
-                <div id="files" class="list"></div>
+                <h3>Internal Workflow</h3>
                 <h4>Request docs</h4>
                 <textarea id="reqText">Please upload missing documents.</textarea>
                 <button id="sendReq" class="primary">Send Request</button>
@@ -137,6 +150,16 @@
                 <textarea id="noteText"></textarea>
                 <button id="saveNote">Save Note</button>
               </article>
+            </div>
+
+            <div id="clientFilesPage" class="card" style="display:none">
+              <div class="row">
+                <h3 style="margin:0">Client File Manager</h3>
+                <button id="closeClientFilesBtn" style="width:auto;">Back to Client Workspace</button>
+              </div>
+              <div id="fileManagerBreadcrumb" class="small muted" style="margin:8px 0;"></div>
+              <div id="fileManagerFolders" class="list"></div>
+              <div id="fileManagerFiles" class="list"></div>
             </div>
           </section>
 
