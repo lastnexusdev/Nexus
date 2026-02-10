@@ -59,3 +59,8 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Files are stored outside the static web root.
 - Uploads use real base64 file payloads from browser file/camera inputs.
 - Internal-only files never appear in the client portal response.
+
+## Compatibility Fix
+
+- Added automatic DB shape normalization/migration on load to support older `data/db.json` files (e.g., legacy `auditLog` key).
+- Prevents runtime crash: `TypeError: Cannot read properties of undefined (reading 'slice')` when hitting `/api/admin/dashboard`.

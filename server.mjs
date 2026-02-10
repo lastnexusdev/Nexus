@@ -36,8 +36,40 @@ function ensureDb() {
   }
 }
 
-function loadDb() { ensureDb(); return JSON.parse(fs.readFileSync(dbPath, 'utf8')); }
-function saveDb(db) { fs.writeFileSync(dbPath, JSON.stringify(db, null, 2)); }
+function normalizeDbShape(db) {
+  if (!db || typeof db !== 'object') db = {};
+  if (!Array.isArray(db.clients)) db.clients = [];
+  // Backward compatibility: older builds used `auditLog` instead of `audit`.
+  if (!Array.isArray(db.audit)) db.audit = Array.isArray(db.auditLog) ? db.auditLog : [];
+  if (!Array.isArray(db.users)) db.users = [
+    { id: 'u-admin', name: 'Admin User', role: 'Admin', token: 'admin-demo' },
+    { id: 'u-prep', name: 'Preparer User', role: 'Preparer', token: 'prep-demo' }
+  ];
+
+  for (const client of db.clients) {
+    if (!Array.isArray(client.files)) client.files = [];
+    if (!Array.isArray(client.notes)) client.notes = [];
+    if (!Array.isArray(client.docRequests)) client.docRequests = [];
+    if (!Array.isArray(client.events)) client.events = [];
+    if (!Array.isArray(client.taxYears)) client.taxYears = [String(new Date().getFullYear())];
+    if (!client.status) client.status = 'Intake Received';
+    if (!client.entityType) client.entityType = '1040';
+    if (!client.portalCode) client.portalCode = `portal-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  return db;
+}
+
+function loadDb() {
+  ensureDb();
+  const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+  const normalized = normalizeDbShape(db);
+  // Persist auto-migrations so subsequent reads are safe in all runtimes.
+  fs.writeFileSync(dbPath, JSON.stringify(normalized, null, 2));
+  return normalized;
+}
+
+function saveDb(db) { fs.writeFileSync(dbPath, JSON.stringify(normalizeDbShape(db), null, 2)); }
 function send(res, status, data, type = 'application/json') {
   res.writeHead(status, { 'Content-Type': type });
   res.end(type === 'application/json' ? JSON.stringify(data) : data);
