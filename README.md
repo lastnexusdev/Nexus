@@ -85,3 +85,14 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Main landing page is now a focused dashboard (not client-detail heavy).
 - Added status distribution graph bars and at-risk client notices.
 - Added dedicated Clients and Notices pages in left navigation for cleaner workflow separation.
+
+
+## Admin UI Theme
+
+- Updated admin look to a TimeCard-inspired professional theme:
+  - dark left sidebar
+  - maroon top header
+  - cleaner dashboard cards and graph panels
+- Clients page now uses a **select-first** workflow:
+  - search/select client first
+  - then load only that client's management workspace (instead of always listing all clients).
