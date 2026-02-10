@@ -10,8 +10,11 @@ These are separate pages with separate UI/flows (not a shared mode toggle).
 ## Run
 
 ```bash
+npm install
 npm run dev
 ```
+
+> `npm install` now includes `@asprise/scannerjs` so Scanner.js is present in dependencies.
 
 Open:
 - Admin: `http://localhost:3000/admin`
