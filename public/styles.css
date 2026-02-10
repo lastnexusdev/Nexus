@@ -1,0 +1,41 @@
+:root {
+  --bg: #f6f8fc;
+  --card: #ffffff;
+  --text: #1a1f36;
+  --muted: #63708a;
+  --primary: #3763ff;
+  --success: #0e9f6e;
+  --warning: #e49f00;
+  --danger: #d64545;
+}
+* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+.app { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.sidebar { background: #0d1730; color: #f3f6ff; padding: 20px; }
+.sidebar h1 { font-size: 1.1rem; margin: 0 0 20px; }
+.nav-btn { width: 100%; margin-bottom: 8px; padding: 10px; border-radius: 10px; border: 0; text-align: left; background: #17264e; color: #cdd9ff; cursor: pointer; }
+.nav-btn.active { background: #3763ff; color: white; }
+.main { padding: 22px; }
+.row { display: grid; gap: 12px; }
+.row.cols-4 { grid-template-columns: repeat(4, minmax(150px, 1fr)); }
+.row.cols-3 { grid-template-columns: repeat(3, minmax(200px, 1fr)); }
+.card { background: var(--card); border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(8, 27, 74, 0.08); }
+.metric { font-size: 1.6rem; font-weight: 700; }
+.muted { color: var(--muted); }
+input, select, textarea, button { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d5dceb; }
+button.primary { background: var(--primary); color: white; border: 0; cursor: pointer; }
+button.ghost { background: #edf2ff; color: #203c9a; border: 0; cursor: pointer; }
+.badge { padding: 4px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; display: inline-block; }
+.status-Filed, .status-Ready\ to\ File { background: #e9f8f1; color: #0e9f6e; }
+.status-Missing\ Docs, .status-Extended { background: #fff6dc; color: #8b5b00; }
+.status-Archived { background: #eceef5; color: #5a6683; }
+.client-list { max-height: 540px; overflow: auto; }
+.client-row { padding: 10px; border: 1px solid #e7ebf4; border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+.client-row.active { border-color: #3763ff; background: #f1f5ff; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.kanban { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 10px; overflow-x: auto; }
+.kan-col { background: #f8faff; border: 1px solid #e3e9f6; border-radius: 12px; padding: 10px; }
+.kan-item { background: white; border: 1px solid #dfe6f8; border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+.timeline { max-height: 260px; overflow: auto; }
+.warn { border-left: 4px solid var(--warning); padding-left: 8px; }
+@media (max-width: 1100px) { .app { grid-template-columns: 1fr; } .row.cols-4, .row.cols-3, .grid-2 { grid-template-columns: 1fr; } }
