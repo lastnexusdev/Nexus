@@ -5,12 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nexus Admin</title>
     <link rel="stylesheet" href="/admin.css" />
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="text/babel" src="/admin.jsx"></script>
+    <div class="layout">
+      <aside class="side">
+        <h2>Nexus Admin</h2>
+        <p class="small">Separate admin app</p>
+        <input id="search" placeholder="Search clients" />
+      </aside>
+      <main class="main">
+        <div id="error" class="card" style="display:none"></div>
+        <div id="kpis" class="grid g4"></div>
+
+        <div class="grid g2">
+          <div class="card">
+            <h3>Clients</h3>
+            <div id="clientList" class="list"></div>
+          </div>
+          <div class="card">
+            <h3>New Client</h3>
+            <input id="newName" placeholder="Name" />
+            <select id="newEntity"><option>1040</option><option>1120</option><option>1120S</option><option>1065</option></select>
+            <input id="newYears" placeholder="Tax years csv" value="2026" />
+            <input id="newStaff" placeholder="Assigned staff" />
+            <button id="createClient">Create</button>
+          </div>
+        </div>
+
+        <div id="selectedPane" class="grid g2" style="display:none">
+          <div class="card">
+            <h3 id="selTitle"></h3>
+            <div id="selInternal" class="small"></div>
+            <select id="statusSelect"></select>
+
+            <h4>File Upload</h4>
+            <select id="folderSelect"></select>
+            <label class="small"><input id="internalOnly" type="checkbox" /> Internal only</label>
+            <input id="fileInput" type="file" />
+
+            <h4>Scan from scanner/camera</h4>
+            <input id="scanInput" type="file" accept="image/*,application/pdf" capture="environment" />
+
+            <h4>Checklist</h4>
+            <div id="checklist"></div>
+          </div>
+          <div class="card">
+            <h3>Client Visible Files</h3>
+            <div id="files" class="scroll"></div>
+            <h4>Request docs</h4>
+            <textarea id="reqText">Please upload missing documents.</textarea>
+            <button id="sendReq">Send Request</button>
+            <h4>Internal Notes</h4>
+            <textarea id="noteText"></textarea>
+            <button id="saveNote">Save Note</button>
+          </div>
+        </div>
+
+        <div class="grid g2">
+          <div class="card"><h3>Missing Docs Queue</h3><div id="missingQueue"></div></div>
+          <div class="card"><h3>Audit</h3><div id="audit" class="scroll"></div></div>
+        </div>
+      </main>
+    </div>
+    <script src="/admin.js"></script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 # Nexus Tax Workflow App
 
-This build is now a **functional split-portal system**:
+This build is a **functional split-portal system** with no external frontend CDN dependency:
 
 - **Admin app** at `/admin`
 - **Client portal** at `/portal`
@@ -16,6 +16,10 @@ npm run dev
 Open:
 - Admin: `http://localhost:3000/admin`
 - Client: `http://localhost:3000/portal`
+
+## Fixed: "NetworkError when attempting to fetch resource"
+
+The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now use local JS files (`public/admin.js`, `public/client.js`), so the app works in restricted environments where external script/CDN requests are blocked.
 
 ## What works now (real behavior)
 
