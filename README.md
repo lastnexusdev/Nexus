@@ -1,6 +1,6 @@
 # Nexus Tax Workflow App
 
-A React-based tax operations dashboard with a Node backend and persistent file-based storage (JSON + filesystem), intentionally avoiding browser local storage for core records.
+A React + Node tax operations app with persistent backend storage (filesystem + JSON), designed for both staff productivity and a client-friendly portal experience.
 
 ## Run
 
@@ -10,32 +10,35 @@ npm run dev
 
 Open: `http://localhost:3000`
 
-## What is included
+## What changed in this version
 
-- Client container model with structured metadata.
-- Default structured folders (`Intake`, `Prior Year`, `Current Year`, `Workpapers`, `Filed Returns`, `Misc`).
-- Upload workflow rules:
-  - category-based auto-sort
-  - timestamp rename on upload
-  - overwrite guard
-  - versioning (`v1`, `v2`, ...)
-- Tax-specific Kanban workflow statuses.
-- Missing-document tracker with visual red/yellow/green indicator.
-- Role-aware API checks (`Admin`, `Preparer`, `Reviewer`, `Read-only`).
-- Audit logging for uploads, notes, and status changes.
-- Search/filter foundation via API query params.
-- Notes timeline with @mention parsing and internal-only notes.
-- Client portal phase-2 placeholder.
-- Admin dashboard with workload and missing-doc visibility.
+- Richer modern UX with role switching:
+  - **Admin View**: dashboard, client containers, workflow, compliance.
+  - **Client View**: secure-feeling portal summary, request list, visible files.
+- Stronger workflow tools for tax prep teams:
+  - status pipeline board
+  - checklist visibility by entity type
+  - request-documents flow
+  - internal notes + event timeline
+- Better file operations:
+  - structured folder storage per client
+  - rename-on-upload + versioning
+  - client-visible vs internal-only file controls
+- **Direct scanning flows** from both sides:
+  - admin scanner simulation (`/api/clients/:id/scan`)
+  - client camera scan simulation (`/api/clients/:id/scan` from client mode)
+- Portal isolation:
+  - internal notes hidden from client portal
+  - internal-only files hidden from client portal
 
-## Persistence model (non-local storage)
+## Persistence model
 
-- `data/db.json`: persistent application data.
-- `storage/<client-id>/...`: persisted file records by client and category.
+- `data/db.json`: durable records for clients, events, users, audit log.
+- `storage/<client-id>/...`: durable uploaded/scanned file payloads.
 
-## Security design notes
+## Security & compliance foundations
 
-- File storage is kept outside the static web root (`/storage` is never served directly).
-- Role restrictions are enforced server-side on write actions.
-- Audit trail is timestamped and actor-attributed.
-- Signed URL / expiring URL flow is listed as the next backend enhancement.
+- Role-aware write restrictions (Admin/Preparer/Reviewer/Read-only/Client).
+- Files kept outside static web root.
+- Audit log entries for create/upload/scan/status/notes/request actions.
+- Portal response is sanitized and does not include internal-only note data.
