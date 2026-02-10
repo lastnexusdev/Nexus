@@ -10,11 +10,8 @@ These are separate pages with separate UI/flows (not a shared mode toggle).
 ## Run
 
 ```bash
-npm install
 npm run dev
 ```
-
-> `npm install` now includes `@asprise/scannerjs` so Scanner.js is present in dependencies.
 
 Open:
 - Admin: `http://localhost:3000/admin`
@@ -32,7 +29,6 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
   - view dashboard metrics
   - set statuses
   - upload files into structured folders
-  - scan/camera-capture documents directly into client folders
   - create document requests
   - add internal notes
   - view client-visible files and audit events
@@ -40,7 +36,6 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
   - sign in with portal code (generated per client)
   - see request list, status, checklist
   - upload files
-  - scan/camera-capture documents directly from their device
   - see only non-internal files
 
 ## API Highlights
@@ -60,7 +55,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 ## Notes
 
 - Files are stored outside the static web root.
-- Uploads use real base64 file payloads from browser file/camera inputs.
+- Uploads use real base64 file payloads from browser file inputs.
 - Internal-only files never appear in the client portal response.
 
 ## Compatibility Fix
@@ -73,9 +68,8 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - In Admin, each client row now has a **Portal** action that opens that exact client's portal dashboard with their `portalCode` prefilled in the URL.
 - This gives quick access to that user section (file manager + status + checklist) instead of staying on the global admin dashboard.
 
-## Scanner Provider Support (TWAIN/Scanner.js)
 
-- Admin and Client portals now include a **Scan via TWAIN/Scanner.js** action.
-- If `Dynamic Web TWAIN` (`window.Dynamsoft.DWT`) or `Scanner.js` (`window.scannerjs`) is detected in your environment, the portal will use that provider path.
-- If no provider is detected, users can still use the fallback camera/file scan input.
-- Note: Dynamic Web TWAIN detection is wired; production capture profile setup should be configured per your licensed environment.
+## Upload-Only Mode
+
+- Scanner integration hooks were removed. Both Admin and Client portals now support **upload only**.
+- This keeps file ingestion reliable and simple through standard file input uploads.

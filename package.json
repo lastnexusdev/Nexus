@@ -6,8 +6,5 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "node server.mjs"
-  },
-  "dependencies": {
-    "@asprise/scannerjs": "^1.0.29"
   }
 }
