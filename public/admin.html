@@ -20,6 +20,7 @@
         <div class="grid g2">
           <div class="card">
             <h3>Clients</h3>
+            <div class="small">Click <b>Portal</b> to jump into that client's portal dashboard.</div>
             <div id="clientList" class="list"></div>
           </div>
           <div class="card">
@@ -43,7 +44,11 @@
             <label class="small"><input id="internalOnly" type="checkbox" /> Internal only</label>
             <input id="fileInput" type="file" />
 
-            <h4>Scan from scanner/camera</h4>
+            <h4>Scanner Integration</h4>
+            <div class="small">Supports Dynamic Web TWAIN / Scanner.js if already installed in your environment.</div>
+            <div id="scannerState" class="small">Scanner provider: checking…</div>
+            <button id="scanProviderBtn">Scan via TWAIN/Scanner.js</button>
+            <h4>Fallback Scan (camera/file)</h4>
             <input id="scanInput" type="file" accept="image/*,application/pdf" capture="environment" />
 
             <h4>Checklist</h4>

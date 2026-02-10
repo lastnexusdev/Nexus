@@ -28,6 +28,48 @@ function setError(msg = '') {
   el.textContent = msg;
 }
 
+function detectScannerProvider() {
+  if (window.Dynamsoft?.DWT) return 'Dynamic Web TWAIN';
+  if (window.scannerjs?.scan) return 'Scanner.js';
+  return null;
+}
+
+function updateScannerState() {
+  const p = detectScannerProvider();
+  $('scannerState').textContent = p
+    ? `Scanner provider: ${p} detected.`
+    : 'Scanner provider: none detected. Install Dynamic Web TWAIN or Scanner.js, or use fallback scan below.';
+}
+
+async function scanWithProvider() {
+  const provider = detectScannerProvider();
+  if (!provider) {
+    throw new Error('No scanner provider found. Use fallback scan input or install Dynamic Web TWAIN / Scanner.js.');
+  }
+
+  if (provider === 'Dynamic Web TWAIN') {
+    throw new Error('Dynamic Web TWAIN detected. Wire your licensed acquisition profile in scanWithProvider() for production capture.');
+  }
+
+  if (provider === 'Scanner.js') {
+    const base64 = await new Promise((resolve, reject) => {
+      window.scannerjs.scan((successful, mesg, response) => {
+        if (!successful) return reject(new Error(mesg || 'Scanner.js failed'));
+        resolve(response);
+      }, {
+        output_settings: [{ type: 'return-base64', format: 'pdf' }]
+      });
+    });
+
+    return {
+      base64: String(base64).startsWith('data:') ? base64 : `data:application/pdf;base64,${base64}`,
+      originalName: `scannerjs-${Date.now()}.pdf`
+    };
+  }
+
+  throw new Error('Unknown scanner provider');
+}
+
 function render() {
   if (state.dash) {
     $('kpis').innerHTML = [
@@ -39,17 +81,30 @@ function render() {
   }
 
   $('clientList').innerHTML = (state.clients || []).map((c) => `
-    <div class="item ${state.selectedId === c.id ? 'active' : ''}" data-id="${esc(c.id)}">
+    <div class="item ${state.selectedId === c.id ? 'active' : ''}" data-id="${esc(c.id)}" data-code="${esc(c.portalCode)}">
       <div class="row"><b>${esc(c.name)}</b><span class="pill">${esc(c.status)}</span></div>
       <div class="small">Portal code: ${esc(c.portalCode)}</div>
+      <div class="row" style="margin-top:6px;">
+        <button class="manageBtn" data-id="${esc(c.id)}" style="width:auto; padding:6px 10px;">Manage</button>
+        <button class="portalBtn" data-code="${esc(c.portalCode)}" style="width:auto; padding:6px 10px;">Portal</button>
+      </div>
     </div>
   `).join('') || '<div class="small">No clients yet.</div>';
 
-  document.querySelectorAll('#clientList .item').forEach((el) => {
-    el.onclick = async () => {
+  document.querySelectorAll('.manageBtn').forEach((el) => {
+    el.onclick = async (e) => {
+      e.stopPropagation();
       state.selectedId = el.getAttribute('data-id');
       await loadSelected();
       render();
+    };
+  });
+
+  document.querySelectorAll('.portalBtn').forEach((el) => {
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const code = el.getAttribute('data-code');
+      window.location.href = `/portal?code=${encodeURIComponent(code)}&from=admin`;
     };
   });
 
@@ -67,6 +122,7 @@ function render() {
 
   $('checklist').innerHTML = (state.selected.checklist || []).map((i) => `<div class="row"><span>${esc(i.doc)}</span><b>${i.found ? '✓' : 'Missing'}</b></div>`).join('');
   $('files').innerHTML = (state.selected.files || []).filter((f) => !f.internalOnly).map((f) => `<div class="item"><b>${esc(f.originalName)}</b><div class="small">${esc(f.category)} v${esc(f.version)} • ${esc(f.source)}</div></div>`).join('') || '<div class="small">No files yet.</div>';
+  updateScannerState();
 }
 
 async function refresh() {
@@ -135,7 +191,27 @@ $('statusSelect').onchange = async () => {
 };
 
 $('fileInput').onchange = async (e) => { try { await uploadFile(e.target.files[0], 'upload'); e.target.value = ''; } catch (err) { setError(err.message); } };
-$('scanInput').onchange = async (e) => { try { await uploadFile(e.target.files[0], 'scan'); e.target.value = ''; } catch (err) { setError(err.message); } };
+$('scanInput').onchange = async (e) => { try { await uploadFile(e.target.files[0], 'scan-fallback'); e.target.value = ''; } catch (err) { setError(err.message); } };
+
+$('scanProviderBtn').onclick = async () => {
+  try {
+    if (!state.selectedId) throw new Error('Select a client first.');
+    const scanned = await scanWithProvider();
+    await jfetch(`/api/admin/clients/${state.selectedId}/upload`, {
+      method: 'POST', headers: HEADERS,
+      body: JSON.stringify({
+        base64: scanned.base64,
+        originalName: scanned.originalName,
+        category: $('folderSelect').value,
+        internalOnly: $('internalOnly').checked,
+        source: 'scan-provider'
+      })
+    });
+    await refresh();
+  } catch (e) {
+    setError(e.message);
+  }
+};
 
 $('sendReq').onclick = async () => {
   try {

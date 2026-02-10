@@ -64,3 +64,15 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 
 - Added automatic DB shape normalization/migration on load to support older `data/db.json` files (e.g., legacy `auditLog` key).
 - Prevents runtime crash: `TypeError: Cannot read properties of undefined (reading 'slice')` when hitting `/api/admin/dashboard`.
+
+## Admin → Client Portal Jump
+
+- In Admin, each client row now has a **Portal** action that opens that exact client's portal dashboard with their `portalCode` prefilled in the URL.
+- This gives quick access to that user section (file manager + status + checklist) instead of staying on the global admin dashboard.
+
+## Scanner Provider Support (TWAIN/Scanner.js)
+
+- Admin and Client portals now include a **Scan via TWAIN/Scanner.js** action.
+- If `Dynamic Web TWAIN` (`window.Dynamsoft.DWT`) or `Scanner.js` (`window.scannerjs`) is detected in your environment, the portal will use that provider path.
+- If no provider is detected, users can still use the fallback camera/file scan input.
+- Note: Dynamic Web TWAIN detection is wired; production capture profile setup should be configured per your licensed environment.

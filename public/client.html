@@ -13,6 +13,11 @@
         <p>Separate client portal. Sign in with your portal code.</p>
       </div>
 
+      <div id="adminJump" class="card" style="display:none">
+        <b>Opened from Admin:</b> You are now in this specific client's portal dashboard.
+        <a href="/admin" style="margin-left:8px;">Back to Admin</a>
+      </div>
+
       <div class="card">
         <label>Portal Code</label>
         <input id="portalCode" placeholder="portal-xxxxxx" />
@@ -31,7 +36,10 @@
             <h4>Upload</h4>
             <select id="clientFolder"><option>Intake</option><option>Current Year/W2s</option><option>Current Year/1099s</option><option>Current Year/K-1s</option><option>Misc</option></select>
             <input id="clientFile" type="file" />
-            <h4>Scan from phone camera</h4>
+            <h4>Scanner Integration</h4>
+            <div id="scannerState" class="small">Scanner provider: checking…</div>
+            <button id="scanProviderBtn">Scan via TWAIN/Scanner.js</button>
+            <h4>Scan from phone camera (fallback)</h4>
             <input id="clientScan" type="file" accept="image/*,application/pdf" capture="environment" />
           </div>
           <div class="card">
