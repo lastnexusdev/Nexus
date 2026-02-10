@@ -106,6 +106,26 @@ function writeBase64File(clientId, folder, fileName, base64) {
   fs.writeFileSync(full, Buffer.from(clean, 'base64'));
 }
 
+
+function mimeFromName(name) {
+  const ext = path.extname(String(name || '')).toLowerCase();
+  if (ext === '.pdf') return 'application/pdf';
+  if (ext === '.png') return 'image/png';
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.txt') return 'text/plain; charset=utf-8';
+  if (ext === '.csv') return 'text/csv; charset=utf-8';
+  if (ext === '.json') return 'application/json';
+  return 'application/octet-stream';
+}
+
+function safeClientFilePath(clientId, category, storedName) {
+  const target = path.normalize(path.join(storageDir, clientId, category, storedName));
+  const root = path.normalize(path.join(storageDir, clientId));
+  if (!target.startsWith(root)) throw new Error('Invalid file path');
+  return target;
+}
+
 function computeChecklist(client) {
   const docs = REQUIRED[client.entityType] || REQUIRED.default;
   return docs.map((d) => ({ doc: d, found: client.files.some((f) => f.originalName.toLowerCase().includes(d.toLowerCase().replace(/[^a-z0-9]/gi, ''))) }));
@@ -295,6 +315,38 @@ function routeApi(req, res) {
       saveDb(db);
       send(res, 201, file);
     }).catch((e) => send(res, 400, { error: e.message }));
+  }
+
+
+  const fileView = url.pathname.match(/^\/api\/files\/([^/]+)\/([^/]+)$/);
+  if (fileView && req.method === 'GET') {
+    const [_, clientId, fileId] = fileView;
+    const client = db.clients.find((c) => c.id === clientId);
+    if (!client) return send(res, 404, { error: 'Client not found' });
+
+    const file = client.files.find((f) => f.id === fileId);
+    if (!file) return send(res, 404, { error: 'File not found' });
+
+    const portalCode = url.searchParams.get('portalCode');
+    const isClientAuthorized = portalCode && portalCode === client.portalCode;
+    const isAdminAuthorized = ['Admin', 'Preparer', 'Reviewer', 'Read-only'].includes(a.role);
+
+    if (!isClientAuthorized && !isAdminAuthorized) return send(res, 403, { error: 'Forbidden' });
+    if (isClientAuthorized && file.internalOnly) return send(res, 403, { error: 'Forbidden' });
+
+    try {
+      const fullPath = safeClientFilePath(client.id, file.category, file.storedName);
+      if (!fs.existsSync(fullPath)) return send(res, 404, { error: 'File missing on disk' });
+
+      res.writeHead(200, {
+        'Content-Type': mimeFromName(file.originalName || file.storedName),
+        'Content-Disposition': `inline; filename="${sanitize(file.originalName || 'document.bin')}"`
+      });
+      fs.createReadStream(fullPath).pipe(res);
+      return true;
+    } catch (e) {
+      return send(res, 400, { error: e.message });
+    }
   }
 
   return false;

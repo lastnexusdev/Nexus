@@ -200,9 +200,27 @@ function renderClientsPage() {
       .filter((f) => !f.internalOnly)
       .map(
         (f) =>
-          `<div class="item"><b>${esc(f.originalName)}</b><div class="small muted">${esc(f.category)} v${esc(f.version)} • ${esc(f.source)}</div></div>`
+          `<div class="item"><div class="row"><b>${esc(f.originalName)}</b><button class="viewFileBtn" data-id="${esc(f.id)}" style="width:auto;padding:5px 10px;">View</button></div><div class="small muted">${esc(f.category)} v${esc(f.version)} • ${esc(f.source)}</div></div>`
       )
       .join('') || '<div class="small muted">No files yet.</div>';
+
+  document.querySelectorAll('.viewFileBtn').forEach((el) => {
+    el.onclick = async () => {
+      try {
+        const id = el.getAttribute('data-id');
+        const resp = await fetch(`/api/files/${encodeURIComponent(state.selected.id)}/${encodeURIComponent(id)}`, {
+          headers: { 'x-user': 'Admin User', 'x-role': 'Admin' }
+        });
+        if (!resp.ok) throw new Error('Unable to load file');
+        const blob = await resp.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank', 'noopener');
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      } catch (e) {
+        setError(e.message);
+      }
+    };
+  });
 }
 
 function renderAll() {

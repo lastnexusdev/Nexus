@@ -34,6 +34,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
   - view dashboard metrics
   - set statuses
   - upload files into structured folders
+  - view uploaded files directly from the admin file manager
   - create document requests
   - add internal notes
   - view client-visible files and audit events
@@ -41,6 +42,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
   - sign in with portal code (generated per client)
   - see request list, status, checklist
   - upload files
+  - view uploaded files directly in the portal file manager
   - see only non-internal files
 
 ## API Highlights
@@ -104,3 +106,10 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Added **Light / Dark mode toggle** in the portal header.
 - Added a compact client summary panel (status, tax years, open requests, uploaded files).
 - Preserved secure portal-code sign-in and upload-only file manager behavior.
+
+
+## File Viewing
+
+- Added a file-view endpoint (`GET /api/files/:clientId/:fileId`) with permission checks.
+- Admin roles can view any client file from the admin file manager.
+- Client portal can view only that client's non-internal files via portal code authorization.

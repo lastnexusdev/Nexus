@@ -56,7 +56,16 @@ function render() {
   $('years').textContent = `Tax Years: ${state.session.taxYears.join(', ')}`;
 
   $('requests').innerHTML = (state.session.requests || []).map((r) => `<div class="file"><div>${esc(r.text)}</div><div>${esc(r.priority)}</div></div>`).join('') || '<div class="muted">No requests right now.</div>';
-  $('files').innerHTML = (state.session.files || []).map((f) => `<div class="file"><div><b>${esc(f.originalName)}</b><div class="muted">${esc(f.category)} v${esc(f.version)}</div></div><div>${esc(f.source)}</div></div>`).join('') || '<div class="muted">No files yet.</div>';
+  $('files').innerHTML = (state.session.files || []).map((f) => `<div class="file"><div><b>${esc(f.originalName)}</b><div class="muted">${esc(f.category)} v${esc(f.version)}</div></div><div><div>${esc(f.source)}</div><button class="viewPortalFileBtn" data-id="${esc(f.id)}" style="width:auto;margin-top:6px;padding:5px 9px;">View</button></div></div>`).join('') || '<div class="muted">No files yet.</div>';
+
+  document.querySelectorAll('.viewPortalFileBtn').forEach((el) => {
+    el.onclick = () => {
+      const id = el.getAttribute('data-id');
+      if (!state.session || !state.portalCode) return;
+      const u = `/api/files/${encodeURIComponent(state.session.id)}/${encodeURIComponent(id)}?portalCode=${encodeURIComponent(state.portalCode)}`;
+      window.open(u, '_blank', 'noopener');
+    };
+  });
   $('checklist').innerHTML = (state.session.checklist || []).map((c) => `<div class="file"><div>${esc(c.doc)}</div><div>${c.found ? 'Received' : 'Needed'}</div></div>`).join('');
 }
 
