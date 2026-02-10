@@ -8,63 +8,114 @@
   </head>
   <body>
     <div class="layout">
-      <aside class="side">
-        <h2>Nexus Admin</h2>
-        <p class="small">Separate admin app</p>
-        <input id="search" placeholder="Search clients" />
+      <aside class="sidebar">
+        <div class="brand">Nexus Admin</div>
+        <div class="tag">Professional tax operations</div>
+
+        <nav class="nav">
+          <button id="navDashboard" class="nav-btn active">Dashboard</button>
+          <button id="navClients" class="nav-btn">Clients</button>
+          <button id="navNotices" class="nav-btn">Notices</button>
+        </nav>
+
+        <div class="sidebar-footer small">Main page focuses on high-level operations only.</div>
       </aside>
+
       <main class="main">
-        <div id="error" class="card" style="display:none"></div>
-        <div id="kpis" class="grid g4"></div>
+        <div id="error" class="alert" style="display:none"></div>
 
-        <div class="grid g2">
-          <div class="card">
-            <h3>Clients</h3>
-            <div class="small">Click <b>Portal</b> to jump into that client's portal dashboard.</div>
-            <div id="clientList" class="list"></div>
+        <section id="viewDashboard" class="view">
+          <header class="hero card">
+            <div>
+              <h1>Operations Dashboard</h1>
+              <p>Priorities first: status health, backlog trends, and clients that may fall behind.</p>
+            </div>
+            <div class="hero-right">
+              <input id="search" placeholder="Quick search clients" />
+            </div>
+          </header>
+
+          <div id="kpis" class="kpi-grid"></div>
+
+          <div class="grid two">
+            <article class="card">
+              <h3>Status distribution</h3>
+              <div id="statusGraph" class="graph"></div>
+            </article>
+            <article class="card">
+              <h3>At-risk notices</h3>
+              <div id="riskNotices" class="list"></div>
+            </article>
           </div>
-          <div class="card">
-            <h3>New Client</h3>
-            <input id="newName" placeholder="Name" />
-            <select id="newEntity"><option>1040</option><option>1120</option><option>1120S</option><option>1065</option></select>
-            <input id="newYears" placeholder="Tax years csv" value="2026" />
-            <input id="newStaff" placeholder="Assigned staff" />
-            <button id="createClient">Create</button>
+
+          <div class="grid two">
+            <article class="card">
+              <h3>Missing documents queue</h3>
+              <div id="missingQueue" class="list"></div>
+            </article>
+            <article class="card">
+              <h3>Recent audit</h3>
+              <div id="audit" class="list"></div>
+            </article>
           </div>
-        </div>
+        </section>
 
-        <div id="selectedPane" class="grid g2" style="display:none">
-          <div class="card">
-            <h3 id="selTitle"></h3>
-            <div id="selInternal" class="small"></div>
-            <select id="statusSelect"></select>
+        <section id="viewClients" class="view" style="display:none">
+          <div class="grid two">
+            <article class="card">
+              <h3>Client directory</h3>
+              <div class="small">Click <b>Portal</b> to jump into that client's portal dashboard.</div>
+              <div id="clientList" class="list"></div>
+            </article>
 
-            <h4>File Upload</h4>
-            <select id="folderSelect"></select>
-            <label class="small"><input id="internalOnly" type="checkbox" /> Internal only</label>
-            <input id="fileInput" type="file" />
-
-            <h4>Checklist</h4>
-            <div id="checklist"></div>
+            <article class="card">
+              <h3>New Client</h3>
+              <input id="newName" placeholder="Name" />
+              <select id="newEntity"><option>1040</option><option>1120</option><option>1120S</option><option>1065</option></select>
+              <input id="newYears" placeholder="Tax years csv" value="2026" />
+              <input id="newStaff" placeholder="Assigned staff" />
+              <button id="createClient" class="primary">Create</button>
+            </article>
           </div>
-          <div class="card">
-            <h3>Client Visible Files</h3>
-            <div id="files" class="scroll"></div>
-            <h4>Request docs</h4>
-            <textarea id="reqText">Please upload missing documents.</textarea>
-            <button id="sendReq">Send Request</button>
-            <h4>Internal Notes</h4>
-            <textarea id="noteText"></textarea>
-            <button id="saveNote">Save Note</button>
-          </div>
-        </div>
 
-        <div class="grid g2">
-          <div class="card"><h3>Missing Docs Queue</h3><div id="missingQueue"></div></div>
-          <div class="card"><h3>Audit</h3><div id="audit" class="scroll"></div></div>
-        </div>
+          <div id="selectedPane" class="grid two" style="display:none">
+            <article class="card">
+              <h3 id="selTitle"></h3>
+              <div id="selInternal" class="small"></div>
+              <select id="statusSelect"></select>
+
+              <h4>File Upload</h4>
+              <select id="folderSelect"></select>
+              <label class="small"><input id="internalOnly" type="checkbox" /> Internal only</label>
+              <input id="fileInput" type="file" />
+
+              <h4>Checklist</h4>
+              <div id="checklist"></div>
+            </article>
+
+            <article class="card">
+              <h3>Client Visible Files</h3>
+              <div id="files" class="list"></div>
+              <h4>Request docs</h4>
+              <textarea id="reqText">Please upload missing documents.</textarea>
+              <button id="sendReq" class="primary">Send Request</button>
+              <h4>Internal Notes</h4>
+              <textarea id="noteText"></textarea>
+              <button id="saveNote">Save Note</button>
+            </article>
+          </div>
+        </section>
+
+        <section id="viewNotices" class="view" style="display:none">
+          <article class="card">
+            <h3>Client performance notices</h3>
+            <p class="small">These indicators help identify clients at risk of delayed filing.</p>
+            <div id="noticeBoard" class="list"></div>
+          </article>
+        </section>
       </main>
     </div>
+
     <script src="/admin.js"></script>
   </body>
 </html>

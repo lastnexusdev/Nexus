@@ -23,6 +23,11 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 
 ## What works now (real behavior)
 
+- Admin left menu now separates:
+  - Dashboard (KPIs + status graph + risk notices)
+  - Clients (directory + per-client management)
+  - Notices (falling-behind board)
+
 - Persistent backend storage in `data/db.json` and `storage/<client-id>/...`
 - Admin can:
   - create clients
@@ -73,3 +78,10 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 
 - Scanner integration hooks were removed. Both Admin and Client portals now support **upload only**.
 - This keeps file ingestion reliable and simple through standard file input uploads.
+
+
+## Admin UX Refresh
+
+- Main landing page is now a focused dashboard (not client-detail heavy).
+- Added status distribution graph bars and at-risk client notices.
+- Added dedicated Clients and Notices pages in left navigation for cleaner workflow separation.

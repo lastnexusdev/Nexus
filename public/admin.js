@@ -1,5 +1,5 @@
 const HEADERS = { 'Content-Type': 'application/json', 'x-user': 'Admin User', 'x-role': 'Admin' };
-const state = { meta: null, dash: null, clients: [], selected: null, selectedId: null };
+const state = { meta: null, dash: null, clients: [], selected: null, selectedId: null, view: 'dashboard' };
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -28,18 +28,70 @@ function setError(msg = '') {
   el.textContent = msg;
 }
 
-function render() {
-  if (state.dash) {
-    $('kpis').innerHTML = [
-      ['Active', state.dash.active], ['Total', state.dash.total], ['Filed', state.dash.filed], ['Extensions', state.dash.extensions]
-    ].map(([k, v]) => `<div class="card"><div class="small">${esc(k)}</div><h2>${esc(v)}</h2></div>`).join('');
+function setView(view) {
+  state.view = view;
+  $('viewDashboard').style.display = view === 'dashboard' ? 'block' : 'none';
+  $('viewClients').style.display = view === 'clients' ? 'block' : 'none';
+  $('viewNotices').style.display = view === 'notices' ? 'block' : 'none';
+  ['navDashboard', 'navClients', 'navNotices'].forEach((id) => $(id).classList.remove('active'));
+  if (view === 'dashboard') $('navDashboard').classList.add('active');
+  if (view === 'clients') $('navClients').classList.add('active');
+  if (view === 'notices') $('navNotices').classList.add('active');
+}
 
-    $('missingQueue').innerHTML = (state.dash.missing || []).slice(0, 10).map((m) => `<div class="warn"><b>${esc(m.name)}</b><div class="small">${esc(m.missing.join(', '))}</div></div>`).join('') || '<div class="small">No missing docs.</div>';
-    $('audit').innerHTML = (state.dash.audit || []).map((a) => `<div class="small">${esc(a.at)} • ${esc(a.action)} • ${esc(a.actor)}</div>`).join('');
-  }
+function riskLevel(clientMissingCount, status) {
+  if (clientMissingCount >= 4 || ['Missing Docs', 'Data Entry'].includes(status)) return 'red';
+  if (clientMissingCount >= 2 || ['Review', 'Extended'].includes(status)) return 'yellow';
+  return 'green';
+}
 
+function buildNotices() {
+  const missingMap = new Map((state.dash?.missing || []).map((m) => [m.id, m.missing.length]));
+  return state.clients.map((c) => {
+    const miss = missingMap.get(c.id) || 0;
+    const level = riskLevel(miss, c.status);
+    let message = 'On track.';
+    if (level === 'red') message = 'High risk of delay. Immediate follow-up needed.';
+    if (level === 'yellow') message = 'Needs attention soon.';
+    return { ...c, missingCount: miss, level, message };
+  }).sort((a, b) => (b.missingCount - a.missingCount));
+}
+
+function renderDashboard() {
+  if (!state.dash) return;
+  $('kpis').innerHTML = [
+    ['Active Clients', state.dash.active],
+    ['Total Clients', state.dash.total],
+    ['Filed', state.dash.filed],
+    ['Extensions', state.dash.extensions]
+  ].map(([l, v]) => `<div class="kpi"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div></div>`).join('');
+
+  const statusEntries = Object.entries(state.dash.returnsByStatus || {});
+  const max = Math.max(1, ...statusEntries.map(([, v]) => Number(v || 0)));
+  $('statusGraph').innerHTML = statusEntries.map(([k, v]) => {
+    const pct = Math.round((Number(v || 0) / max) * 100);
+    return `<div class="graph-row"><div class="small">${esc(k)}</div><div class="bar"><div class="fill" style="width:${pct}%"></div></div><div class="small">${esc(v)}</div></div>`;
+  }).join('');
+
+  const notices = buildNotices();
+  $('riskNotices').innerHTML = notices.slice(0, 8).map((n) => (
+    `<div class="item notice-${n.level}"><div class="row"><b>${esc(n.name)}</b><span class="pill">${esc(n.status)}</span></div><div class="small">Missing docs: ${n.missingCount}</div><div class="small">${esc(n.message)}</div></div>`
+  )).join('') || '<div class="small">No notices.</div>';
+
+  $('missingQueue').innerHTML = (state.dash.missing || []).slice(0, 12).map((m) => `<div class="warn"><b>${esc(m.name)}</b><div class="small">${esc(m.missing.join(', '))}</div></div>`).join('') || '<div class="small">No missing docs.</div>';
+  $('audit').innerHTML = (state.dash.audit || []).map((a) => `<div class="item"><div class="small">${esc(a.at)}</div><div>${esc(a.action)} · ${esc(a.actor)}</div></div>`).join('') || '<div class="small">No audit entries.</div>';
+}
+
+function renderNoticesPage() {
+  const notices = buildNotices();
+  $('noticeBoard').innerHTML = notices.map((n) => (
+    `<div class="item notice-${n.level}"><div class="row"><b>${esc(n.name)}</b><span class="pill">${esc(n.status)}</span></div><div class="small">Missing docs: ${n.missingCount}</div><div>${esc(n.message)}</div></div>`
+  )).join('') || '<div class="small">No notices.</div>';
+}
+
+function renderClientsPage() {
   $('clientList').innerHTML = (state.clients || []).map((c) => `
-    <div class="item ${state.selectedId === c.id ? 'active' : ''}" data-id="${esc(c.id)}" data-code="${esc(c.portalCode)}">
+    <div class="item ${state.selectedId === c.id ? 'active' : ''}">
       <div class="row"><b>${esc(c.name)}</b><span class="pill">${esc(c.status)}</span></div>
       <div class="small">Portal code: ${esc(c.portalCode)}</div>
       <div class="row" style="margin-top:6px;">
@@ -54,7 +106,7 @@ function render() {
       e.stopPropagation();
       state.selectedId = el.getAttribute('data-id');
       await loadSelected();
-      render();
+      renderClientsPage();
     };
   });
 
@@ -74,12 +126,16 @@ function render() {
   $('selectedPane').style.display = 'grid';
   $('selTitle').textContent = state.selected.name;
   $('selInternal').textContent = `Internal ID: ${state.selected.clientInternalId}`;
-
   $('statusSelect').innerHTML = state.meta.statuses.map((s) => `<option ${s === state.selected.status ? 'selected' : ''}>${esc(s)}</option>`).join('');
   $('folderSelect').innerHTML = state.meta.folders.map((f) => `<option>${esc(f)}</option>`).join('');
-
   $('checklist').innerHTML = (state.selected.checklist || []).map((i) => `<div class="row"><span>${esc(i.doc)}</span><b>${i.found ? '✓' : 'Missing'}</b></div>`).join('');
   $('files').innerHTML = (state.selected.files || []).filter((f) => !f.internalOnly).map((f) => `<div class="item"><b>${esc(f.originalName)}</b><div class="small">${esc(f.category)} v${esc(f.version)} • ${esc(f.source)}</div></div>`).join('') || '<div class="small">No files yet.</div>';
+}
+
+function renderAll() {
+  renderDashboard();
+  renderClientsPage();
+  renderNoticesPage();
 }
 
 async function refresh() {
@@ -96,7 +152,7 @@ async function refresh() {
     state.clients = clients;
     if (!state.selectedId && clients[0]) state.selectedId = clients[0].id;
     if (state.selectedId) await loadSelected();
-    render();
+    renderAll();
   } catch (e) {
     setError(e.message);
   }
@@ -123,7 +179,11 @@ async function uploadFile(file, source = 'upload') {
   await refresh();
 }
 
+$('navDashboard').onclick = () => setView('dashboard');
+$('navClients').onclick = () => setView('clients');
+$('navNotices').onclick = () => setView('notices');
 $('search').addEventListener('input', () => refresh());
+
 $('createClient').onclick = async () => {
   try {
     await jfetch('/api/admin/clients', {
@@ -136,13 +196,16 @@ $('createClient').onclick = async () => {
       })
     });
     $('newName').value = '';
+    setView('clients');
     await refresh();
   } catch (e) { setError(e.message); }
 };
 
 $('statusSelect').onchange = async () => {
   try {
-    await jfetch(`/api/admin/clients/${state.selectedId}/status`, { method: 'PATCH', headers: HEADERS, body: JSON.stringify({ status: $('statusSelect').value }) });
+    await jfetch(`/api/admin/clients/${state.selectedId}/status`, {
+      method: 'PATCH', headers: HEADERS, body: JSON.stringify({ status: $('statusSelect').value })
+    });
     await refresh();
   } catch (e) { setError(e.message); }
 };
@@ -158,17 +221,22 @@ $('fileInput').onchange = async (e) => {
 
 $('sendReq').onclick = async () => {
   try {
-    await jfetch(`/api/admin/clients/${state.selectedId}/requests`, { method: 'POST', headers: HEADERS, body: JSON.stringify({ text: $('reqText').value, priority: 'high' }) });
+    await jfetch(`/api/admin/clients/${state.selectedId}/requests`, {
+      method: 'POST', headers: HEADERS, body: JSON.stringify({ text: $('reqText').value, priority: 'high' })
+    });
     await refresh();
   } catch (e) { setError(e.message); }
 };
 
 $('saveNote').onclick = async () => {
   try {
-    await jfetch(`/api/admin/clients/${state.selectedId}/notes`, { method: 'POST', headers: HEADERS, body: JSON.stringify({ text: $('noteText').value }) });
+    await jfetch(`/api/admin/clients/${state.selectedId}/notes`, {
+      method: 'POST', headers: HEADERS, body: JSON.stringify({ text: $('noteText').value })
+    });
     $('noteText').value = '';
     await refresh();
   } catch (e) { setError(e.message); }
 };
 
+setView('dashboard');
 refresh();
