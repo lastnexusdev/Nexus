@@ -96,3 +96,11 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Clients page now uses a **select-first** workflow:
   - search/select client first
   - then load only that client's management workspace (instead of always listing all clients).
+
+
+## Client Portal UI Refresh
+
+- Redesigned client portal to match a more modern professional style.
+- Added **Light / Dark mode toggle** in the portal header.
+- Added a compact client summary panel (status, tax years, open requests, uploaded files).
+- Preserved secure portal-code sign-in and upload-only file manager behavior.

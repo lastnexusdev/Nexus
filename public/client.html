@@ -6,46 +6,79 @@
     <title>Nexus Client Portal</title>
     <link rel="stylesheet" href="/client.css" />
   </head>
-  <body>
-    <div class="wrap">
-      <div class="hero">
-        <h1>Secure Client Portal</h1>
-        <p>Separate client portal. Sign in with your portal code.</p>
-      </div>
-
-      <div id="adminJump" class="card" style="display:none">
-        <b>Opened from Admin:</b> You are now in this specific client's portal dashboard.
-        <a href="/admin" style="margin-left:8px;">Back to Admin</a>
-      </div>
-
-      <div class="card">
-        <label>Portal Code</label>
-        <input id="portalCode" placeholder="portal-xxxxxx" />
-        <button id="signIn">Sign In</button>
-        <p id="error"></p>
-      </div>
-
-      <div id="sessionPane" style="display:none">
-        <div class="grid g2">
-          <div class="card">
-            <h3 id="welcome"></h3>
-            <p id="status"></p>
-            <p id="years"></p>
-            <h4>Requested Documents</h4>
-            <div id="requests"></div>
-            <h4>Upload</h4>
-            <select id="clientFolder"><option>Intake</option><option>Current Year/W2s</option><option>Current Year/1099s</option><option>Current Year/K-1s</option><option>Misc</option></select>
-            <input id="clientFile" type="file" />
-          </div>
-          <div class="card">
-            <h3>Your Files</h3>
-            <div id="files"></div>
-            <h3>Checklist</h3>
-            <div id="checklist"></div>
-          </div>
+  <body data-theme="light">
+    <div class="portal-shell">
+      <header class="topbar">
+        <div>
+          <div class="title">Nexus Client Portal</div>
+          <div class="subtitle">Secure document exchange for your tax return</div>
         </div>
-      </div>
+        <div class="top-actions">
+          <button id="themeToggle" class="toggle">🌙 Dark Mode</button>
+        </div>
+      </header>
+
+      <main class="wrap">
+        <div id="adminJump" class="card banner" style="display:none">
+          <b>Opened from Admin:</b> You are now in this specific client's portal dashboard.
+          <a href="/admin" class="back-link">Back to Admin</a>
+        </div>
+
+        <section class="grid two">
+          <article class="card">
+            <h3>Portal Sign In</h3>
+            <p class="muted">Enter your portal code to view your status, requests, and file manager.</p>
+            <label>Portal Code</label>
+            <input id="portalCode" placeholder="portal-xxxxxx" />
+            <button id="signIn" class="primary">Sign In</button>
+            <p id="error" class="error"></p>
+          </article>
+
+          <article class="card">
+            <h3>Client Dashboard</h3>
+            <div id="summary" class="summary muted">Sign in to load your dashboard.</div>
+            <div class="summary-grid" id="summaryGrid" style="display:none">
+              <div class="metric"><span>Status</span><b id="statusMetric">-</b></div>
+              <div class="metric"><span>Tax Years</span><b id="yearsMetric">-</b></div>
+              <div class="metric"><span>Open Requests</span><b id="reqMetric">0</b></div>
+              <div class="metric"><span>Uploaded Files</span><b id="fileMetric">0</b></div>
+            </div>
+          </article>
+        </section>
+
+        <section id="sessionPane" style="display:none">
+          <div class="grid two">
+            <article class="card">
+              <h3 id="welcome"></h3>
+              <p id="status" class="muted"></p>
+              <p id="years" class="muted"></p>
+
+              <h4>Requested Documents</h4>
+              <div id="requests" class="list"></div>
+
+              <h4>Upload Documents</h4>
+              <select id="clientFolder">
+                <option>Intake</option>
+                <option>Current Year/W2s</option>
+                <option>Current Year/1099s</option>
+                <option>Current Year/K-1s</option>
+                <option>Misc</option>
+              </select>
+              <input id="clientFile" type="file" />
+            </article>
+
+            <article class="card">
+              <h3>Your Files</h3>
+              <div id="files" class="list"></div>
+
+              <h3>Checklist</h3>
+              <div id="checklist" class="list"></div>
+            </article>
+          </div>
+        </section>
+      </main>
     </div>
+
     <script src="/client.js"></script>
   </body>
 </html>
