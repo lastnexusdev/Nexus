@@ -1,6 +1,11 @@
 # Nexus Tax Workflow App
 
-A React + Node tax operations app with persistent backend storage (filesystem + JSON), designed for both staff productivity and a client-friendly portal experience.
+This build is now a **functional split-portal system**:
+
+- **Admin app** at `/admin`
+- **Client portal** at `/portal`
+
+These are separate pages with separate UI/flows (not a shared mode toggle).
 
 ## Run
 
@@ -8,37 +13,45 @@ A React + Node tax operations app with persistent backend storage (filesystem + 
 npm run dev
 ```
 
-Open: `http://localhost:3000`
+Open:
+- Admin: `http://localhost:3000/admin`
+- Client: `http://localhost:3000/portal`
 
-## What changed in this version
+## What works now (real behavior)
 
-- Richer modern UX with role switching:
-  - **Admin View**: dashboard, client containers, workflow, compliance.
-  - **Client View**: secure-feeling portal summary, request list, visible files.
-- Stronger workflow tools for tax prep teams:
-  - status pipeline board
-  - checklist visibility by entity type
-  - request-documents flow
-  - internal notes + event timeline
-- Better file operations:
-  - structured folder storage per client
-  - rename-on-upload + versioning
-  - client-visible vs internal-only file controls
-- **Direct scanning flows** from both sides:
-  - admin scanner simulation (`/api/clients/:id/scan`)
-  - client camera scan simulation (`/api/clients/:id/scan` from client mode)
-- Portal isolation:
-  - internal notes hidden from client portal
-  - internal-only files hidden from client portal
+- Persistent backend storage in `data/db.json` and `storage/<client-id>/...`
+- Admin can:
+  - create clients
+  - view dashboard metrics
+  - set statuses
+  - upload files into structured folders
+  - scan/camera-capture documents directly into client folders
+  - create document requests
+  - add internal notes
+  - view client-visible files and audit events
+- Client can:
+  - sign in with portal code (generated per client)
+  - see request list, status, checklist
+  - upload files
+  - scan/camera-capture documents directly from their device
+  - see only non-internal files
 
-## Persistence model
+## API Highlights
 
-- `data/db.json`: durable records for clients, events, users, audit log.
-- `storage/<client-id>/...`: durable uploaded/scanned file payloads.
+- Admin
+  - `GET /api/admin/dashboard`
+  - `GET/POST /api/admin/clients`
+  - `GET /api/admin/clients/:id`
+  - `POST /api/admin/clients/:id/upload`
+  - `PATCH /api/admin/clients/:id/status`
+  - `POST /api/admin/clients/:id/notes`
+  - `POST /api/admin/clients/:id/requests`
+- Client
+  - `GET /api/client/session?portalCode=...`
+  - `POST /api/client/:id/upload`
 
-## Security & compliance foundations
+## Notes
 
-- Role-aware write restrictions (Admin/Preparer/Reviewer/Read-only/Client).
-- Files kept outside static web root.
-- Audit log entries for create/upload/scan/status/notes/request actions.
-- Portal response is sanitized and does not include internal-only note data.
+- Files are stored outside the static web root.
+- Uploads use real base64 file payloads from browser file/camera inputs.
+- Internal-only files never appear in the client portal response.
