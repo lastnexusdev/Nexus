@@ -196,47 +196,30 @@ function renderSettingsPage() {
 
 function filteredClients() {
   const q = state.pickerQuery.trim().toLowerCase();
-  if (!q) return [];
   return state.clients.filter((c) =>
-    [c.name, c.status, c.entityType, c.assignedStaff, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)
+    !q || [c.name, c.status, c.entityType, c.assignedStaff, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)
   );
 }
 
-function renderPicker() {
-  const rows = filteredClients();
-  $('pickerResults').innerHTML =
-    rows
-      .slice(0, 30)
-      .map((c) => `<div class="item"><div class="row"><b>${esc(c.name)}</b><span class="pill">${esc(c.status)}</span></div><div class="small muted">${esc(c.entityType)} · ${esc(c.assignedStaff || 'Unassigned')}</div><div class="row" style="margin-top:6px;"><button class="selectClientBtn" data-id="${esc(c.id)}" style="width:auto;">Select Client</button></div></div>`)
-      .join('');
-
-  if (!rows.length && state.pickerQuery.trim()) {
-    $('pickerResults').innerHTML = '<div class="small muted">No client matches that search.</div>';
-  }
-
-  document.querySelectorAll('.selectClientBtn').forEach((el) => {
-    el.onclick = async () => {
-      state.selectedId = el.getAttribute('data-id');
-      await loadSelected();
-      state.pickerQuery = '';
-      $('search').value = '';
-      state.fileManagerYear = null;
-      state.fileManagerFolder = null;
-      renderClientsPage();
-    };
-  });
-
-  renderFullClientList();
+function clientRowTone(client) {
+  const uploads = (state.dash?.audit || []).filter((a) => a.action === 'CLIENT_UPLOAD' && a.clientId === client.id);
+  const hasUnseenUpload = uploads.some((a) => !state.notifSeenIds.has(a.id));
+  if (hasUnseenUpload) return 'row-new-upload';
+  if (['Filed', 'Archived'].includes(client.status)) return 'row-complete';
+  if (client.status === 'In Progress') return 'row-in-progress';
+  const missingMap = new Map((state.dash?.missing || []).map((m) => [m.id, m.missing.length]));
+  const missingCount = missingMap.get(client.id) || 0;
+  if (riskLevel(missingCount, client.status) === 'red') return 'row-at-risk';
+  return '';
 }
 
 function renderFullClientList() {
-  const q = state.pickerQuery.trim().toLowerCase();
-  const rows = (q ? filteredClients() : state.clients)
+  const rows = filteredClients()
     .slice()
     .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
 
   $('fullClientList').innerHTML = rows.length
-    ? rows.map((c) => `<tr>
+    ? rows.map((c) => `<tr class="${clientRowTone(c)}">
         <td><b>${esc(c.name)}</b></td>
         <td>${esc(c.entityType)}</td>
         <td><span class="status-chip">${esc(c.status)}</span></td>
@@ -377,7 +360,7 @@ function renderClientFilesPage() {
 }
 
 function renderClientsPage() {
-  renderPicker();
+  renderFullClientList();
 
   const hasSelected = Boolean(state.selected);
   $('clientsSelectMode').style.display = hasSelected ? 'none' : 'grid';
@@ -476,7 +459,7 @@ $('navSettings').onclick = () => setView('settings');
 
 $('search').addEventListener('input', (e) => {
   state.pickerQuery = e.target.value;
-  renderPicker();
+  renderFullClientList();
 });
 
 $('createClient').onclick = async () => {

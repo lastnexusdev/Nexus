@@ -11,7 +11,7 @@ const dataDir = path.join(__dirname, 'data');
 const storageDir = path.join(__dirname, 'storage');
 const dbPath = path.join(dataDir, 'db.json');
 
-const STATUS = ['Intake Received', 'Missing Docs', 'Data Entry', 'Review', 'Ready to File', 'Filed', 'Extended', 'Archived'];
+const STATUS = ['In Progress', 'Missing Docs', 'Data Entry', 'Review', 'Ready to File', 'Filed', 'Extended', 'Archived'];
 const DEFAULT_FOLDERS = ['Intake', 'Prior Year/2025', 'Prior Year/2024', 'Current Year/W2s', 'Current Year/1099s', 'Current Year/K-1s', 'Workpapers', 'Filed Returns', 'Misc'];
 const REQUIRED = {
   '1040': ['Questionnaire', 'ID', 'W-2', '1099'],
@@ -64,7 +64,8 @@ function normalizeDbShape(db) {
     if (!Array.isArray(client.docRequests)) client.docRequests = [];
     if (!Array.isArray(client.events)) client.events = [];
     if (!Array.isArray(client.taxYears)) client.taxYears = [];
-    if (!client.status) client.status = 'Intake Received';
+    if (!client.status) client.status = 'In Progress';
+    if (client.status === 'Intake Received') client.status = 'In Progress';
     if (!client.entityType) client.entityType = '1040';
     if (!client.portalCode) client.portalCode = `portal-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -202,7 +203,7 @@ function routeApi(req, res) {
         businessName: p.businessName || '',
         entityType: p.entityType || '1040',
         taxYears: Array.isArray(p.taxYears) ? p.taxYears.map(String) : [],
-        status: p.status || 'Intake Received',
+        status: p.status || 'In Progress',
         assignedStaff: p.assignedStaff || '',
         identifiers: p.identifiers || [],
         files: [],

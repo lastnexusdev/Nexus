@@ -102,3 +102,8 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 .client-table thead th { background:#f6f8fd; color:#4c566f; font-weight:700; }
 .client-table tbody tr:hover { background:#fafcff; }
 .status-chip { border-radius:999px; padding:3px 8px; font-size:11px; background:#eef2ff; color:#2f4fa5; }
+
+.client-table tr.row-in-progress td { background: #f3f4f7; }
+.client-table tr.row-new-upload td { background: #fff8d9; }
+.client-table tr.row-complete td { background: #e6f6ea; }
+.client-table tr.row-at-risk td { background: #fde8e8; }
