@@ -92,6 +92,8 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Added client-portal top **Important Deadlines** bar with countdown to start/end dates from Admin settings.
 - Notification bell now includes an **Open Client** action for each client submission to jump directly into that client workspace.
 - Added request submission feedback in Admin (validation + success/error message) to prevent accidental duplicate requests.
+- Admin document requests now support structured prior-year requests with selected **Tax Year** + **Document Type** (instead of only free-text generic requests).
+- Client portal request uploads are now year-focused for prior-year return workflows, and quick upload is simplified to full-return uploads by tax year.
 - Added status distribution graph bars and at-risk client notices.
 - Added dedicated Clients and Notices pages in left navigation for cleaner workflow separation.
 

@@ -106,20 +106,30 @@ function renderSummary() {
   $('fileMetric').textContent = (state.session.files || []).length;
 }
 
-function uploadInputHtml(requestId = '') {
+function getYearOptions() {
+  const y = new Date().getFullYear();
+  const base = Array.from({ length: 11 }, (_, i) => String(y - i));
+  const fromSession = (state.session?.taxYears || []).map(String);
+  return Array.from(new Set([...fromSession, ...base])).sort((a, b) => Number(b) - Number(a));
+}
+
+function renderYearSelectors() {
+  const options = getYearOptions();
+  $('clientTaxYear').innerHTML = options.map((y) => `<option value="${esc(y)}">TaxYear ${esc(y)}</option>`).join('');
+}
+
+function uploadInputHtml(request) {
+  const reqId = request?.id || '';
+  const reqYear = request?.taxYear || '';
+  const years = getYearOptions();
+  const yearOptions = years.map((y) => `<option value="${esc(y)}" ${String(y) === String(reqYear) ? 'selected' : ''}>TaxYear ${esc(y)}</option>`).join('');
   return `
     <div class="row" style="margin-top:8px; align-items:flex-end;">
-      <select class="requestFolder" data-request-id="${esc(requestId)}" style="width:auto;min-width:220px;">
-        <option>Intake</option>
-        <option>Current Year/W2s</option>
-        <option>Current Year/1099s</option>
-        <option>Current Year/K-1s</option>
-        <option>Misc</option>
-      </select>
-      <input class="requestFile" data-request-id="${esc(requestId)}" type="file" style="width:auto;" />
-      <button class="requestUploadBtn primary" data-request-id="${esc(requestId)}" style="width:auto;">Upload</button>
+      <select class="requestYear" data-request-id="${esc(reqId)}" style="width:auto;min-width:220px;">${yearOptions}</select>
+      <input class="requestFile" data-request-id="${esc(reqId)}" type="file" style="width:auto;" />
+      <button class="requestUploadBtn primary" data-request-id="${esc(reqId)}" style="width:auto;">Upload</button>
     </div>
-    <div class="small muted requestUploadNotice" data-request-id="${esc(requestId)}"></div>
+    <div class="small muted requestUploadNotice" data-request-id="${esc(reqId)}"></div>
   `;
 }
 
@@ -133,10 +143,10 @@ function bindRequestUploadInputs() {
     el.onclick = async () => {
       const reqId = el.getAttribute('data-request-id') || '';
       const input = document.querySelector(`.requestFile[data-request-id="${CSS.escape(reqId)}"]`);
-      const folder = document.querySelector(`.requestFolder[data-request-id="${CSS.escape(reqId)}"]`);
+      const year = document.querySelector(`.requestYear[data-request-id="${CSS.escape(reqId)}"]`);
       if (!input?.files?.[0]) return requestNotice(reqId, 'Select a file first.');
       requestNotice(reqId, 'Uploading...');
-      await upload(input.files[0], 'request-upload', folder?.value || 'Intake');
+      await upload(input.files[0], 'request-upload', 'Filed Returns', year?.value || '');
       input.value = '';
       if (reqId) {
         const ok = await markRequestComplete(reqId);
@@ -219,7 +229,7 @@ function maybeShowRequestPopup() {
 
   $('popupRequests').innerHTML = pending
     .slice(0, 6)
-    .map((r) => `<div class="request-card"><div class="row"><b>${esc(r.text)}</b><span class="pill">${esc(r.priority || 'normal')}</span></div>${uploadInputHtml(r.id)}</div>`)
+    .map((r) => `<div class="request-card"><div class="row"><b>${esc(r.text)}</b><span class="pill">${esc(r.priority || 'normal')}</span></div><div class="small muted">${esc(r.docType || 'Document')} · TaxYear ${esc(r.taxYear || '')}</div>${uploadInputHtml(r)}</div>`)
     .join('');
 
   $('requestPopup').style.display = 'grid';
@@ -239,6 +249,7 @@ function render() {
   $('welcome').textContent = `Welcome, ${state.session.name}`;
   $('status').innerHTML = `Status: <b>${esc(state.session.status)}</b>`;
   $('years').textContent = `Tax Years: ${state.session.taxYears.join(', ')}`;
+  renderYearSelectors();
 
   const pendingRequests = (state.session.requests || []).filter((r) => !r.completed);
   $('requestsPreview').innerHTML = pendingRequests.length
@@ -250,7 +261,7 @@ function render() {
       <div class="request-card">
         <div class="row"><b>${esc(r.text)}</b><span class="pill">${esc(r.priority || 'normal')}</span></div>
         <div class="muted small">${r.completed ? 'Completed' : 'Pending upload'}</div>
-        ${r.completed ? '' : uploadInputHtml(r.id)}
+        ${r.completed ? '' : uploadInputHtml(r)}
       </div>
     `).join('')
     : '<div class="muted">No requests right now.</div>';
@@ -295,7 +306,7 @@ async function signIn() {
   }
 }
 
-async function upload(file, source = 'client-upload', category = null) {
+async function upload(file, source = 'client-upload', category = null, taxYear = null) {
   if (!file || !state.session) return;
   try {
     setError('');
@@ -306,7 +317,8 @@ async function upload(file, source = 'client-upload', category = null) {
         portalCode: state.portalCode,
         base64,
         originalName: file.name,
-        category: category || $('clientFolder').value,
+        category: category || 'Filed Returns',
+        taxYear: taxYear || $('clientTaxYear').value,
         source
       })
     });

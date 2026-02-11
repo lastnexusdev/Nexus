@@ -323,7 +323,7 @@ function routeApi(req, res) {
     return parseBody(req).then((p) => {
       const client = db.clients.find((c) => c.id === adminReq[1]);
       if (!client) return send(res, 404, { error: 'Client not found' });
-      const reqItem = { id: crypto.randomUUID(), text: p.text || '', priority: p.priority || 'medium', completed: false, createdAt: new Date().toISOString() };
+      const reqItem = { id: crypto.randomUUID(), text: p.text || '', priority: p.priority || 'medium', taxYear: p.taxYear ? String(p.taxYear) : '', docType: p.docType || '', completed: false, createdAt: new Date().toISOString() };
       client.docRequests.unshift(reqItem);
       client.updatedAt = new Date().toISOString();
       addAudit(db, { actor: a.user, role: a.role, action: 'REQUEST_DOCS', clientId: client.id });

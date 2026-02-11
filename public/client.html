@@ -79,14 +79,8 @@
 
               <article class="card">
                 <h3>Quick Upload</h3>
-                <p class="muted">Use this for anything requested by your preparer.</p>
-                <select id="clientFolder">
-                  <option>Intake</option>
-                  <option>Current Year/W2s</option>
-                  <option>Current Year/1099s</option>
-                  <option>Current Year/K-1s</option>
-                  <option>Misc</option>
-                </select>
+                <p class="muted">Upload full returns by tax year.</p>
+                <select id="clientTaxYear"></select>
                 <input id="clientFile" type="file" />
                 <div class="row">
                   <button id="clientUploadBtn" class="primary" style="width:auto;">Upload Selected File</button>
@@ -100,7 +94,7 @@
           <section id="clientViewRequests" class="client-view" style="display:none">
             <article class="card">
               <h3>Requested Documents</h3>
-              <p class="muted">You can upload directly from each request card.</p>
+              <p class="muted">Choose the requested tax year and upload the requested document.</p>
               <div id="requests" class="list"></div>
             </article>
           </section>

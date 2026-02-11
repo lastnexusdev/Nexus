@@ -374,6 +374,7 @@ function renderClientsPage() {
   $('addTaxYearSelect').innerHTML = '<option value="">Select year to add</option>' + sortedYears
     .filter((y) => !existingYears.includes(String(y)))
     .map((y) => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
+  $('reqYear').innerHTML = sortedYears.map((y) => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
   $('checklist').innerHTML = (state.selected.checklist || []).map((i) => `<div class="row"><span>${esc(i.doc)}</span><b>${i.found ? '✓' : 'Missing'}</b></div>`).join('');
   setReqFeedback('');
   setTaxYearFeedback('');
@@ -533,15 +534,17 @@ $('notifBell').onclick = () => {
 
 $('sendReq').onclick = async () => {
   try {
-    const text = $('reqText').value.trim();
-    if (!text) return setReqFeedback('Request text is required.', false);
+    const year = $('reqYear').value;
+    const docType = $('reqDocType').value;
+    if (!year || !docType) return setReqFeedback('Select year and document type.', false);
+    const text = `Please upload ${docType} for TaxYear ${year}.`;
     $('sendReq').disabled = true;
     await jfetch(`/api/admin/clients/${state.selectedId}/requests`, {
       method: 'POST',
       headers: HEADERS,
-      body: JSON.stringify({ text, priority: 'high' })
+      body: JSON.stringify({ text, priority: 'high', taxYear: year, docType })
     });
-    setReqFeedback('Request submitted successfully.');
+    setReqFeedback(`Request sent: ${docType} for TaxYear ${year}.`);
     await refresh();
   } catch (e) {
     setReqFeedback(e.message, false);

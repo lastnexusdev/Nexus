@@ -155,8 +155,15 @@
 
               <article class="card">
                 <h3>Internal Workflow</h3>
-                <h4>Request docs</h4>
-                <textarea id="reqText">Please upload missing documents.</textarea>
+                <h4>Request Prior-Year Document</h4>
+                <select id="reqYear"></select>
+                <select id="reqDocType">
+                  <option value="Full Return PDF">Full Return PDF</option>
+                  <option value="W-2">W-2</option>
+                  <option value="1099">1099</option>
+                  <option value="K-1">K-1</option>
+                  <option value="Other Supporting Doc">Other Supporting Doc</option>
+                </select>
                 <button id="sendReq" class="primary">Send Request</button>
                 <div id="reqFeedback" class="small muted"></div>
                 <h4>Internal Notes</h4>
