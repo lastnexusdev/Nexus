@@ -7,9 +7,11 @@ const state = {
   selectedId: null,
   view: 'dashboard',
   pickerQuery: '',
-  filters: { status: '', entity: '', staff: '' },
-  sortBy: 'lastName',
+  filters: { status: 'In Progress', entity: '', staff: '' },
+  sortBy: 'status',
   sortDir: 'asc',
+  page: 1,
+  pageSize: 50,
   fileManagerYear: null,
   fileManagerFolder: null,
   notifPanelOpen: false,
@@ -249,7 +251,7 @@ function populateClientFilters() {
 
   statusEl.innerHTML = '<option value="">All Statuses</option>' + statuses.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
   entityEl.innerHTML = '<option value="">All Entities</option>' + entities.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
-  staffEl.innerHTML = '<option value="">All Staff</option>' + staff.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  staffEl.innerHTML = '<option value="">All Tax Pros</option>' + staff.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
 
   statusEl.value = state.filters.status;
   entityEl.value = state.filters.entity;
@@ -268,47 +270,141 @@ function clientRowTone(client) {
   return '';
 }
 
+function statusChipClass(status) {
+  const map = {
+    'In Progress': 'status-chip--in-progress',
+    'Missing Docs': 'status-chip--missing-docs',
+    'Data Entry': 'status-chip--data-entry',
+    'Review': 'status-chip--review',
+    'Ready to File': 'status-chip--ready-to-file',
+    'Filed': 'status-chip--filed',
+    'Extended': 'status-chip--extended',
+    'Archived': 'status-chip--archived'
+  };
+  return map[status] || 'status-chip--in-progress';
+}
+
+function sortClients(list) {
+  const col = state.sortBy;
+  const dir = state.sortDir === 'desc' ? -1 : 1;
+  return list.slice().sort((a, b) => {
+    let av, bv;
+    if (col === 'firstName' || col === 'lastName') {
+      av = clientNameParts(a)[col] || '';
+      bv = clientNameParts(b)[col] || '';
+    } else if (col === 'updatedAt') {
+      av = a.updatedAt || a.createdAt || '';
+      bv = b.updatedAt || b.createdAt || '';
+      return dir * (av < bv ? -1 : av > bv ? 1 : 0);
+    } else {
+      av = String(a[col] || '');
+      bv = String(b[col] || '');
+    }
+    return dir * String(av).localeCompare(String(bv), undefined, { sensitivity: 'base' });
+  });
+}
+
+function formatDate(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  if (isNaN(d)) return '-';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function renderPagination(totalRows) {
+  const el = $('pagination');
+  if (!el) return;
+  const totalPages = Math.max(1, Math.ceil(totalRows / state.pageSize));
+  if (state.page > totalPages) state.page = totalPages;
+
+  const start = (state.page - 1) * state.pageSize + 1;
+  const end = Math.min(state.page * state.pageSize, totalRows);
+
+  if (totalRows <= state.pageSize) {
+    el.innerHTML = `<span class="dt-page-info">Showing ${totalRows} of ${totalRows} clients</span>`;
+    return;
+  }
+
+  let html = '';
+  html += `<button class="dt-page-btn" data-page="prev" ${state.page <= 1 ? 'disabled' : ''}>&laquo; Prev</button>`;
+
+  const maxVisible = 7;
+  let pages = [];
+  if (totalPages <= maxVisible) {
+    pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+  } else {
+    pages.push(1);
+    let start = Math.max(2, state.page - 2);
+    let end = Math.min(totalPages - 1, state.page + 2);
+    if (start > 2) pages.push('...');
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push('...');
+    pages.push(totalPages);
+  }
+
+  for (const p of pages) {
+    if (p === '...') {
+      html += `<span class="dt-page-info">...</span>`;
+    } else {
+      html += `<button class="dt-page-btn ${p === state.page ? 'active' : ''}" data-page="${p}">${p}</button>`;
+    }
+  }
+
+  html += `<button class="dt-page-btn" data-page="next" ${state.page >= totalPages ? 'disabled' : ''}>Next &raquo;</button>`;
+  html += `<span class="dt-page-info">${start}-${end} of ${totalRows}</span>`;
+  el.innerHTML = html;
+
+  el.querySelectorAll('.dt-page-btn').forEach((btn) => {
+    btn.onclick = () => {
+      const v = btn.dataset.page;
+      if (v === 'prev') state.page = Math.max(1, state.page - 1);
+      else if (v === 'next') state.page = Math.min(totalPages, state.page + 1);
+      else state.page = Number(v);
+      renderFullClientList();
+    };
+  });
+}
+
 function renderFullClientList() {
   populateClientFilters();
-  const rows = filteredClients()
-    .slice()
-    .sort((a, b) => {
-      const an = clientNameParts(a);
-      const bn = clientNameParts(b);
-      const primaryKey = state.sortBy === 'firstName' ? 'firstName' : 'lastName';
-      const secondaryKey = primaryKey === 'firstName' ? 'lastName' : 'firstName';
-      const primaryCmp = String(an[primaryKey] || '').localeCompare(String(bn[primaryKey] || ''), undefined, { sensitivity: 'base' });
-      const secondaryCmp = String(an[secondaryKey] || '').localeCompare(String(bn[secondaryKey] || ''), undefined, { sensitivity: 'base' });
-      const fallbackCmp = String(clientDisplayName(a)).localeCompare(String(clientDisplayName(b)), undefined, { sensitivity: 'base' });
-      const dir = state.sortDir === 'desc' ? -1 : 1;
-      return dir * (primaryCmp || secondaryCmp || fallbackCmp);
-    });
+  const sorted = sortClients(filteredClients());
+  const totalRows = sorted.length;
+
+  // Update count
+  const countEl = $('clientCount');
+  if (countEl) countEl.textContent = `${totalRows} client${totalRows !== 1 ? 's' : ''}`;
+
+  // Paginate
+  const totalPages = Math.max(1, Math.ceil(totalRows / state.pageSize));
+  if (state.page > totalPages) state.page = totalPages;
+  const pageStart = (state.page - 1) * state.pageSize;
+  const rows = sorted.slice(pageStart, pageStart + state.pageSize);
 
   $('fullClientList').innerHTML = rows.length
     ? rows.map((c) => {
       const parts = clientNameParts(c);
       return `<tr class="${clientRowTone(c)}">
-        <td><span class="status-chip">${esc(c.status)}</span></td>
+        <td><span class="status-chip ${statusChipClass(c.status)}">${esc(c.status)}</span></td>
         <td><b>${esc(parts.firstName || '-')}</b></td>
         <td>${esc(parts.lastName || '-')}</td>
         <td>${esc(c.entityType)}</td>
         <td>${esc(c.email || '-')}</td>
         <td>${esc(c.assignedStaff || 'Unassigned')}</td>
-        <td><button class="selectClientRowBtn" data-id="${esc(c.id)}" style="width:auto;">Open</button></td>
+        <td>${esc(formatDate(c.updatedAt || c.createdAt))}</td>
+        <td class="dt-action-col"><button class="dt-open-btn selectClientRowBtn" data-id="${esc(c.id)}">Open</button></td>
       </tr>`;
     }).join('')
-    : '<tr><td colspan="7" class="small muted">No clients match the current filters.</td></tr>';
+    : '<tr><td colspan="8" class="small muted" style="text-align:center;padding:28px;">No clients match the current filters.</td></tr>';
 
+  // Update sort header indicators
+  document.querySelectorAll('.dt-sortable').forEach((th) => {
+    th.dataset.dir = th.dataset.col === state.sortBy ? state.sortDir : '';
+  });
 
-  const firstHead = $('sortFirstName');
-  const lastHead = $('sortLastName');
-  if (firstHead && lastHead) {
-    firstHead.classList.toggle('active-sort', state.sortBy === 'firstName');
-    lastHead.classList.toggle('active-sort', state.sortBy === 'lastName');
-    firstHead.dataset.dir = state.sortBy === 'firstName' ? state.sortDir : '';
-    lastHead.dataset.dir = state.sortBy === 'lastName' ? state.sortDir : '';
-  }
+  // Pagination
+  renderPagination(totalRows);
 
+  // Row click handlers
   document.querySelectorAll('.selectClientRowBtn').forEach((el) => {
     el.onclick = async () => {
       state.selectedId = el.getAttribute('data-id');
@@ -452,8 +548,7 @@ function renderClientsPage() {
   renderFullClientList();
 
   const hasSelected = Boolean(state.selected);
-  $('clientsSelectMode').style.display = hasSelected ? 'none' : 'grid';
-  $('fullClientListCard').style.display = hasSelected ? 'none' : 'block';
+  $('clientsSelectMode').style.display = hasSelected ? 'none' : 'block';
   $('clientSelectedHeader').style.display = hasSelected ? 'block' : 'none';
   $('selectedPane').style.display = hasSelected ? 'grid' : 'none';
 
@@ -548,57 +643,66 @@ $('navSettings').onclick = () => setView('settings');
 
 $('search').addEventListener('input', (e) => {
   state.pickerQuery = e.target.value;
+  state.page = 1;
   renderClientsPage();
 });
 
 $('filterStatus').onchange = (e) => {
   state.filters.status = e.target.value;
+  state.page = 1;
   renderClientsPage();
 };
 
 $('filterEntity').onchange = (e) => {
   state.filters.entity = e.target.value;
+  state.page = 1;
   renderClientsPage();
 };
 
 $('filterStaff').onchange = (e) => {
   state.filters.staff = e.target.value;
+  state.page = 1;
   renderClientsPage();
 };
-
 
 $('clearFilters').onclick = () => {
   state.filters = { status: '', entity: '', staff: '' };
   state.pickerQuery = '';
+  state.page = 1;
   $('search').value = '';
   renderClientsPage();
 };
 
-
-
-function applyNameSort(column) {
+function applySort(column) {
   if (state.sortBy === column) {
     state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
   } else {
     state.sortBy = column;
     state.sortDir = 'asc';
   }
+  state.page = 1;
   renderClientsPage();
 }
 
-$('sortFirstName').onclick = () => applyNameSort('firstName');
-$('sortLastName').onclick = () => applyNameSort('lastName');
-$('sortFirstName').onkeydown = (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    applyNameSort('firstName');
-  }
+document.querySelectorAll('.dt-sortable').forEach((th) => {
+  th.onclick = () => applySort(th.dataset.col);
+  th.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      applySort(th.dataset.col);
+    }
+  };
+});
+
+// Add Client modal
+$('addClientBtn').onclick = () => {
+  $('addClientModal').style.display = 'flex';
 };
-$('sortLastName').onkeydown = (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    applyNameSort('lastName');
-  }
+$('closeAddClient').onclick = () => {
+  $('addClientModal').style.display = 'none';
+};
+$('addClientModal').onclick = (e) => {
+  if (e.target === $('addClientModal')) $('addClientModal').style.display = 'none';
 };
 
 $('createClient').onclick = async () => {
@@ -617,6 +721,8 @@ $('createClient').onclick = async () => {
     $('newFirstName').value = '';
     $('newLastName').value = '';
     $('newEmail').value = '';
+    $('newStaff').value = '';
+    $('addClientModal').style.display = 'none';
     setView('clients');
     await refresh();
   } catch (e) {
