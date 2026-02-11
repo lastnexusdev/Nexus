@@ -97,6 +97,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Added status distribution graph bars and at-risk client notices.
 - Added dedicated Clients and Notices pages in left navigation for cleaner workflow separation.
 - Clients page now shows a full **All Clients** listing table while preserving progressive search filtering for quick narrowing.
+- All Clients now supports richer directory controls: **Status/Entity/Assigned Staff** filters, **A→Z/Z→A name sorting**, and split **First Name / Last Name** columns for clearer firm-style client records.
 - Status label **Intake Received** has been renamed to **In Progress** across app behavior and APIs.
 - All-clients table now supports color coding: In Progress (gray), new unseen client upload (yellow), complete/filed (green), and at-risk (red).
 

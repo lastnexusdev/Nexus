@@ -105,9 +105,12 @@
 
               <article class="card">
                 <h3>Create New Client</h3>
-                <input id="newName" placeholder="Name" />
+                <div class="row">
+                  <input id="newFirstName" placeholder="First Name" />
+                  <input id="newLastName" placeholder="Last Name" />
+                </div>
                 <select id="newEntity"><option>1040</option><option>1120</option><option>1120S</option><option>1065</option></select>
-                                <input id="newStaff" placeholder="Assigned staff" />
+                <input id="newStaff" placeholder="Assigned staff" />
                 <button id="createClient" class="primary">Create</button>
               </article>
             </div>
@@ -115,13 +118,24 @@
             <article id="fullClientListCard" class="card" style="margin-top:10px;">
               <div class="row">
                 <h3 style="margin:0">All Clients</h3>
-                <div class="small muted">Progressive search above filters this list in real time.</div>
+                <div class="small muted">Progressive search + filters below.</div>
+              </div>
+              <div class="row filter-toolbar">
+                <select id="filterStatus" style="width:auto;min-width:170px;"><option value="">All Statuses</option></select>
+                <select id="filterEntity" style="width:auto;min-width:130px;"><option value="">All Entities</option></select>
+                <select id="filterStaff" style="width:auto;min-width:170px;"><option value="">All Staff</option></select>
+                <select id="sortName" style="width:auto;min-width:160px;">
+                  <option value="az">Name A → Z</option>
+                  <option value="za">Name Z → A</option>
+                </select>
+                <button id="clearFilters" style="width:auto;">Clear</button>
               </div>
               <div class="table-wrap">
                 <table class="client-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
+                      <th>First Name</th>
+                      <th>Last Name</th>
                       <th>Entity</th>
                       <th>Status</th>
                       <th>Assigned Staff</th>

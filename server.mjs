@@ -21,6 +21,21 @@ const REQUIRED = {
   default: ['Questionnaire', 'ID']
 };
 
+
+function splitNameParts(raw = '') {
+  const parts = String(raw || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { firstName: '', lastName: '' };
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
+function displayName(client = {}) {
+  const first = String(client.firstName || '').trim();
+  const last = String(client.lastName || '').trim();
+  const full = `${first} ${last}`.trim();
+  return full || String(client.businessName || client.name || '');
+}
+
 function ensureDb() {
   fs.mkdirSync(dataDir, { recursive: true });
   fs.mkdirSync(storageDir, { recursive: true });
@@ -64,6 +79,12 @@ function normalizeDbShape(db) {
     if (!Array.isArray(client.docRequests)) client.docRequests = [];
     if (!Array.isArray(client.events)) client.events = [];
     if (!Array.isArray(client.taxYears)) client.taxYears = [];
+    const nameParts = splitNameParts(client.name || client.businessName || '');
+    if (typeof client.firstName !== 'string') client.firstName = nameParts.firstName;
+    if (typeof client.lastName !== 'string') client.lastName = nameParts.lastName;
+    client.firstName = String(client.firstName || '').trim();
+    client.lastName = String(client.lastName || '').trim();
+    client.name = displayName(client);
     if (!client.status) client.status = 'In Progress';
     if (client.status === 'Intake Received') client.status = 'In Progress';
     if (!client.entityType) client.entityType = '1040';
@@ -155,7 +176,7 @@ function routeApi(req, res) {
 
   if (url.pathname === '/api/admin/dashboard' && req.method === 'GET') {
     const returnsByStatus = Object.fromEntries(STATUS.map((s) => [s, db.clients.filter((c) => c.status === s).length]));
-    const missing = db.clients.map((c) => ({ id: c.id, name: c.name, missing: computeChecklist(c).filter((x) => !x.found).map((x) => x.doc) })).filter((m) => m.missing.length);
+    const missing = db.clients.map((c) => ({ id: c.id, name: displayName(c), missing: computeChecklist(c).filter((x) => !x.found).map((x) => x.doc) })).filter((m) => m.missing.length);
     return send(res, 200, {
       total: db.clients.length,
       active: db.clients.filter((c) => c.status !== 'Archived').length,
@@ -188,7 +209,7 @@ function routeApi(req, res) {
 
   if (url.pathname === '/api/admin/clients' && req.method === 'GET') {
     const q = (url.searchParams.get('q') || '').toLowerCase();
-    return send(res, 200, db.clients.filter((c) => !q || [c.name, c.entityType, c.status, c.assignedStaff, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)));
+    return send(res, 200, db.clients.filter((c) => !q || [displayName(c), c.firstName, c.lastName, c.name, c.entityType, c.status, c.assignedStaff, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)));
   }
 
   if (url.pathname === '/api/admin/clients' && req.method === 'POST') {
@@ -199,8 +220,10 @@ function routeApi(req, res) {
         id,
         portalCode: `portal-${Math.random().toString(36).slice(2, 8)}`,
         clientInternalId: `C-${Math.floor(Math.random() * 90000 + 10000)}`,
-        name: p.name || '',
+        firstName: String(p.firstName || '').trim(),
+        lastName: String(p.lastName || '').trim(),
         businessName: p.businessName || '',
+        name: '',
         entityType: p.entityType || '1040',
         taxYears: Array.isArray(p.taxYears) ? p.taxYears.map(String) : [],
         status: p.status || 'In Progress',
@@ -213,6 +236,7 @@ function routeApi(req, res) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+      client.name = displayName(client);
       fs.mkdirSync(path.join(storageDir, id), { recursive: true });
       DEFAULT_FOLDERS.forEach((f) => fs.mkdirSync(path.join(storageDir, id, f), { recursive: true }));
       db.clients.unshift(client);

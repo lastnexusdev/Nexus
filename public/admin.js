@@ -7,6 +7,8 @@ const state = {
   selectedId: null,
   view: 'dashboard',
   pickerQuery: '',
+  filters: { status: '', entity: '', staff: '' },
+  sortName: 'az',
   fileManagerYear: null,
   fileManagerFolder: null,
   notifPanelOpen: false,
@@ -16,6 +18,27 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function splitNameParts(raw = '') {
+  const parts = String(raw || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { firstName: '', lastName: '' };
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
+function clientNameParts(client = {}) {
+  const fallback = splitNameParts(client.name || '');
+  return {
+    firstName: String(client.firstName || fallback.firstName || '').trim(),
+    lastName: String(client.lastName || fallback.lastName || '').trim()
+  };
+}
+
+function clientDisplayName(client = {}) {
+  const { firstName, lastName } = clientNameParts(client);
+  const full = `${firstName} ${lastName}`.trim();
+  return full || String(client.businessName || client.name || 'Unnamed Client');
+}
 
 async function jfetch(url, options = {}) {
   const res = await fetch(url, options);
@@ -67,7 +90,7 @@ function setSettingsFeedback(msg = '', ok = true) {
 
 
 function getClientUploadNotifications() {
-  const map = new Map((state.clients || []).map((c) => [c.id, c.name]));
+  const map = new Map((state.clients || []).map((c) => [c.id, clientDisplayName(c)]));
   return (state.dash?.audit || [])
     .filter((a) => a.action === 'CLIENT_UPLOAD')
     .map((a) => ({ ...a, clientName: map.get(a.clientId) || a.clientId || 'Unknown client' }));
@@ -196,9 +219,37 @@ function renderSettingsPage() {
 
 function filteredClients() {
   const q = state.pickerQuery.trim().toLowerCase();
-  return state.clients.filter((c) =>
-    !q || [c.name, c.status, c.entityType, c.assignedStaff, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)
-  );
+  return state.clients.filter((c) => {
+    const name = clientDisplayName(c);
+    const haystack = [name, c.firstName, c.lastName, c.businessName, c.status, c.entityType, c.assignedStaff, ...(c.identifiers || [])]
+      .join(' ')
+      .toLowerCase();
+    if (q && !haystack.includes(q)) return false;
+    if (state.filters.status && c.status !== state.filters.status) return false;
+    if (state.filters.entity && c.entityType !== state.filters.entity) return false;
+    if (state.filters.staff && (c.assignedStaff || '') !== state.filters.staff) return false;
+    return true;
+  });
+}
+
+function populateClientFilters() {
+  const statusEl = $('filterStatus');
+  const entityEl = $('filterEntity');
+  const staffEl = $('filterStaff');
+  if (!statusEl || !entityEl || !staffEl) return;
+
+  const statuses = Array.from(new Set((state.clients || []).map((c) => c.status).filter(Boolean))).sort();
+  const entities = Array.from(new Set((state.clients || []).map((c) => c.entityType).filter(Boolean))).sort();
+  const staff = Array.from(new Set((state.clients || []).map((c) => c.assignedStaff).filter(Boolean))).sort();
+
+  statusEl.innerHTML = '<option value="">All Statuses</option>' + statuses.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  entityEl.innerHTML = '<option value="">All Entities</option>' + entities.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  staffEl.innerHTML = '<option value="">All Staff</option>' + staff.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+
+  statusEl.value = state.filters.status;
+  entityEl.value = state.filters.entity;
+  staffEl.value = state.filters.staff;
+  $('sortName').value = state.sortName;
 }
 
 function clientRowTone(client) {
@@ -214,20 +265,32 @@ function clientRowTone(client) {
 }
 
 function renderFullClientList() {
+  populateClientFilters();
   const rows = filteredClients()
     .slice()
-    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    .sort((a, b) => {
+      const an = clientNameParts(a);
+      const bn = clientNameParts(b);
+      const lastCmp = String(an.lastName || '').localeCompare(String(bn.lastName || ''), undefined, { sensitivity: 'base' });
+      const firstCmp = String(an.firstName || '').localeCompare(String(bn.firstName || ''), undefined, { sensitivity: 'base' });
+      const dir = state.sortName === 'za' ? -1 : 1;
+      return dir * (lastCmp || firstCmp || String(clientDisplayName(a)).localeCompare(String(clientDisplayName(b))));
+    });
 
   $('fullClientList').innerHTML = rows.length
-    ? rows.map((c) => `<tr class="${clientRowTone(c)}">
-        <td><b>${esc(c.name)}</b></td>
+    ? rows.map((c) => {
+      const parts = clientNameParts(c);
+      return `<tr class="${clientRowTone(c)}">
+        <td><b>${esc(parts.firstName || '-')}</b></td>
+        <td>${esc(parts.lastName || '-')}</td>
         <td>${esc(c.entityType)}</td>
         <td><span class="status-chip">${esc(c.status)}</span></td>
         <td>${esc(c.assignedStaff || 'Unassigned')}</td>
         <td>${esc((c.taxYears || []).join(', ') || '-')}</td>
         <td><button class="selectClientRowBtn" data-id="${esc(c.id)}" style="width:auto;">Open</button></td>
-      </tr>`).join('')
-    : '<tr><td colspan="6" class="small muted">No clients match the current search.</td></tr>';
+      </tr>`;
+    }).join('')
+    : '<tr><td colspan="7" class="small muted">No clients match the current filters.</td></tr>';
 
   document.querySelectorAll('.selectClientRowBtn').forEach((el) => {
     el.onclick = async () => {
@@ -373,9 +436,9 @@ function renderClientsPage() {
     return;
   }
 
-  $('selectedClientName').textContent = state.selected.name;
+  $('selectedClientName').textContent = clientDisplayName(state.selected);
   $('selectedClientMeta').textContent = `${state.selected.entityType} · ${state.selected.status} · ${state.selected.assignedStaff || 'Unassigned'}`;
-  $('selTitle').textContent = state.selected.name;
+  $('selTitle').textContent = clientDisplayName(state.selected);
   $('selInternal').textContent = `Internal ID: ${state.selected.clientInternalId}`;
   $('statusSelect').innerHTML = state.meta.statuses.map((s) => `<option ${s === state.selected.status ? 'selected' : ''}>${esc(s)}</option>`).join('');
   $('folderSelect').innerHTML = state.meta.folders.map((f) => `<option>${esc(f)}</option>`).join('');
@@ -459,8 +522,37 @@ $('navSettings').onclick = () => setView('settings');
 
 $('search').addEventListener('input', (e) => {
   state.pickerQuery = e.target.value;
-  renderFullClientList();
+  renderClientsPage();
 });
+
+$('filterStatus').onchange = (e) => {
+  state.filters.status = e.target.value;
+  renderClientsPage();
+};
+
+$('filterEntity').onchange = (e) => {
+  state.filters.entity = e.target.value;
+  renderClientsPage();
+};
+
+$('filterStaff').onchange = (e) => {
+  state.filters.staff = e.target.value;
+  renderClientsPage();
+};
+
+$('sortName').onchange = (e) => {
+  state.sortName = e.target.value || 'az';
+  renderClientsPage();
+};
+
+$('clearFilters').onclick = () => {
+  state.filters = { status: '', entity: '', staff: '' };
+  state.sortName = 'az';
+  state.pickerQuery = '';
+  $('search').value = '';
+  renderClientsPage();
+};
+
 
 $('createClient').onclick = async () => {
   try {
@@ -468,12 +560,14 @@ $('createClient').onclick = async () => {
       method: 'POST',
       headers: HEADERS,
       body: JSON.stringify({
-        name: $('newName').value.trim(),
+        firstName: $('newFirstName').value.trim(),
+        lastName: $('newLastName').value.trim(),
         entityType: $('newEntity').value,
         assignedStaff: $('newStaff').value.trim()
       })
     });
-    $('newName').value = '';
+    $('newFirstName').value = '';
+    $('newLastName').value = '';
     setView('clients');
     await refresh();
   } catch (e) {
