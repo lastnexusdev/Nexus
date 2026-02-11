@@ -8,17 +8,30 @@
   </head>
   <body data-theme="light">
     <div class="portal-shell">
-      <header class="topbar">
-        <div>
-          <div class="title">Nexus Client Portal</div>
-          <div class="subtitle">Secure document exchange for your tax return</div>
+      <header class="portal-nav">
+        <div class="nav-left">
+          <button id="backHomeBtn" class="nav-link">◀ Back</button>
         </div>
-        <div class="top-actions">
+        <div class="nav-center">
+          <button id="navClientDashboard" class="nav-link active">🏠 Home</button>
+          <button id="navClientFiles" class="nav-link">📁 Files</button>
+          <button id="meetingBtn" class="nav-link">🎥 Meeting</button>
+          <button id="historyBtn" class="nav-link">🧾 History</button>
+        </div>
+        <div class="nav-right">
           <button id="themeToggle" class="toggle">🌙 Dark Mode</button>
         </div>
       </header>
 
       <main class="wrap">
+        <section class="hero card">
+          <div>
+            <div class="eyebrow" id="clientLabel">NEXUS CLIENT</div>
+            <h1 id="homeHeading">Tax Client Portal Home Page</h1>
+            <p class="muted" id="homeSubtext">Sign in to view your requests, exchange files, and track return progress.</p>
+          </div>
+          <div class="hero-art" aria-hidden="true">📄🔐</div>
+        </section>
 
         <section class="card deadline-bar">
           <div class="row">
@@ -38,55 +51,70 @@
           <a href="/admin" class="back-link">Back to Admin</a>
         </div>
 
-        <section class="grid two">
-          <article class="card">
-            <h3>Portal Sign In</h3>
-            <p class="muted">Enter your portal code to view your status, requests, and file manager.</p>
-            <label>Portal Code</label>
+        <section class="card sign-in-card">
+          <div>
+            <h3>Portal Access</h3>
+            <p class="muted">Enter your portal code to access your tasks, files, and tax-return progress.</p>
+          </div>
+          <div class="sign-controls">
             <input id="portalCode" placeholder="portal-xxxxxx" />
             <button id="signIn" class="primary">Sign In</button>
-            <p id="error" class="error"></p>
-          </article>
-
-          <article class="card">
-            <h3>Client Dashboard</h3>
-            <div id="summary" class="summary muted">Sign in to load your dashboard.</div>
-            <div class="summary-grid" id="summaryGrid" style="display:none">
-              <div class="metric"><span>Status</span><b id="statusMetric">-</b></div>
-              <div class="metric"><span>Tax Years</span><b id="yearsMetric">-</b></div>
-              <div class="metric"><span>Open Requests</span><b id="reqMetric">0</b></div>
-              <div class="metric"><span>Uploaded Files</span><b id="fileMetric">0</b></div>
-            </div>
-          </article>
+          </div>
+          <p id="error" class="error"></p>
         </section>
 
         <section id="sessionPane" style="display:none">
-          <nav class="client-nav">
-            <button id="navClientDashboard" class="nav-pill active">Overview</button>
-            <button id="navClientRequests" class="nav-pill">Requests</button>
-            <button id="navClientFiles" class="nav-pill">File Manager</button>
-          </nav>
-
-          <section id="clientViewDashboard" class="client-view">
-            <div class="grid two">
-              <article class="card">
+          <section class="card dashboard-card" id="clientViewDashboard">
+            <div class="summary-head">
+              <div>
                 <h3 id="welcome"></h3>
                 <p id="status" class="muted"></p>
                 <p id="years" class="muted"></p>
-                <h4>Latest Requested Documents</h4>
-                <div id="requestsPreview" class="list"></div>
+              </div>
+              <div class="summary-grid" id="summaryGrid" style="display:none">
+                <div class="metric"><span>Status</span><b id="statusMetric">-</b></div>
+                <div class="metric"><span>Tax Years</span><b id="yearsMetric">-</b></div>
+                <div class="metric"><span>Open Requests</span><b id="reqMetric">0</b></div>
+                <div class="metric"><span>Uploaded Files</span><b id="fileMetric">0</b></div>
+              </div>
+            </div>
+
+            <div class="action-list">
+              <article class="action-row">
+                <div class="action-icon">☑️</div>
+                <div>
+                  <h4>Actions</h4>
+                  <p class="muted">When your tax professional requests documents, they appear here.</p>
+                  <div id="requestsPreview" class="list mini-list"></div>
+                </div>
+                <button id="actionOpenRequests" class="action-btn">Open Requests</button>
               </article>
 
-              <article class="card">
-                <h3>Quick Upload</h3>
-                <p class="muted">Upload full returns by tax year.</p>
-                <select id="clientTaxYear"></select>
-                <input id="clientFile" type="file" />
-                <div class="row">
-                  <button id="clientUploadBtn" class="primary" style="width:auto;">Upload Selected File</button>
-                  <button id="clientUploadCancelBtn" style="width:auto;">Cancel Selected File</button>
+              <article class="action-row">
+                <div class="action-icon">📁</div>
+                <div>
+                  <h4>Files</h4>
+                  <p class="muted">Securely upload and review shared files in your file manager.</p>
                 </div>
-                <div id="clientUploadNotice" class="muted small"></div>
+                <button id="actionOpenFiles" class="action-btn">File Manager</button>
+              </article>
+
+              <article class="action-row">
+                <div class="action-icon">🎥</div>
+                <div>
+                  <h4>Meeting</h4>
+                  <p class="muted">Need to meet your tax professional? Start with a secure scheduling request.</p>
+                </div>
+                <button id="actionMeeting" class="action-btn">Online Meeting</button>
+              </article>
+
+              <article class="action-row">
+                <div class="action-icon">🧾</div>
+                <div>
+                  <h4>History</h4>
+                  <p class="muted">Review completed uploads and status activity.</p>
+                </div>
+                <button id="actionHistory" class="action-btn">Action History</button>
               </article>
             </div>
           </section>
@@ -94,7 +122,7 @@
           <section id="clientViewRequests" class="client-view" style="display:none">
             <article class="card">
               <h3>Requested Documents</h3>
-              <p class="muted">Choose the requested tax year and upload the requested document.</p>
+              <p class="muted">Upload requested documents by tax year and mark requests complete.</p>
               <div id="requests" class="list"></div>
             </article>
           </section>
@@ -105,13 +133,20 @@
                 <h3 style="margin:0">Your File Manager</h3>
                 <button id="backToClientFolders" style="width:auto;display:none;">← Back to folders</button>
               </div>
+              <div class="quick-upload-row">
+                <select id="clientTaxYear"></select>
+                <input id="clientFile" type="file" />
+                <button id="clientUploadBtn" class="primary" style="width:auto;">Upload Selected File</button>
+                <button id="clientUploadCancelBtn" style="width:auto;">Cancel</button>
+              </div>
+              <div id="clientUploadNotice" class="muted small"></div>
               <div id="clientFilesBreadcrumb" class="muted small" style="margin:8px 0"></div>
               <div id="clientFolders" class="list"></div>
               <div id="clientFiles" class="list" style="display:none"></div>
             </article>
           </section>
 
-          <section class="grid two">
+          <section class="grid two aux-panels">
             <article class="card">
               <h3>Checklist</h3>
               <div id="checklist" class="list"></div>
@@ -130,10 +165,10 @@
         <div class="row">
           <h3 style="margin:0">Action Required</h3>
         </div>
-        <p class="muted">Your preparer requested documents. Upload them from Requests or Quick Upload.</p>
+        <p class="muted">Your preparer requested documents. Upload from this popup or open Requests.</p>
         <div id="popupRequests" class="list"></div>
         <div class="row popup-footer">
-          <button id="closePopup" class="popup-cancel" style="width:auto">Close for now</button>
+          <button id="closePopup" class="popup-cancel">Close for now</button>
         </div>
       </div>
     </div>

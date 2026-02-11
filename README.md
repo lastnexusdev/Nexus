@@ -132,6 +132,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Preserved secure portal-code sign-in and upload-only file manager behavior.
 
 - Client portal now includes separated sections for **Overview**, **Requests**, and **File Manager** to reduce clutter and guide clients through tasks.
+- Client home page now uses a navigation-first layout (Back/Home/Files/Meeting/History) with action rows for Requests, Files, Meeting, and History inspired by a professional tax-portal dashboard style.
 - Added an action popup for pending document requests immediately after sign-in, with a direct upload control on each request card.
 - Added folder-first file manager navigation for clients (folders → files → view).
 - Added explicit client-side upload controls with **Upload** and **Cancel** actions (no forced instant upload).

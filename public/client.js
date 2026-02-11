@@ -1,5 +1,6 @@
 const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false, meta: null };
 const $ = (id) => document.getElementById(id);
+const show = (id, on) => { const el = $(id); if (el) el.style.display = on ? '' : 'none'; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 async function jfetch(url, options = {}) {
@@ -70,14 +71,13 @@ async function loadMeta() {
 
 function setView(view) {
   state.view = view;
-  $('clientViewDashboard').style.display = view === 'overview' ? 'block' : 'none';
-  $('clientViewRequests').style.display = view === 'requests' ? 'block' : 'none';
-  $('clientViewFiles').style.display = view === 'files' ? 'block' : 'none';
+  show('clientViewDashboard', view === 'overview');
+  show('clientViewRequests', view === 'requests');
+  show('clientViewFiles', view === 'files');
 
-  ['navClientDashboard', 'navClientRequests', 'navClientFiles'].forEach((id) => $(id).classList.remove('active'));
-  if (view === 'overview') $('navClientDashboard').classList.add('active');
-  if (view === 'requests') $('navClientRequests').classList.add('active');
-  if (view === 'files') $('navClientFiles').classList.add('active');
+  ['navClientDashboard', 'navClientFiles'].forEach((id) => $(id)?.classList.remove('active'));
+  if (view === 'overview') $('navClientDashboard')?.classList.add('active');
+  if (view === 'files') $('navClientFiles')?.classList.add('active');
 
   if (view === 'files') renderFileManager();
 }
@@ -93,15 +93,13 @@ function filesByFolder(files = []) {
 
 function renderSummary() {
   if (!state.session) {
-    $('summary').textContent = 'Sign in to load your dashboard.';
     $('summaryGrid').style.display = 'none';
     return;
   }
 
-  $('summary').textContent = 'Your return visibility at a glance.';
   $('summaryGrid').style.display = 'grid';
   $('statusMetric').textContent = state.session.status;
-  $('yearsMetric').textContent = state.session.taxYears.join(', ');
+  $('yearsMetric').textContent = state.session.taxYears.join(', ') || '-';
   $('reqMetric').textContent = (state.session.requests || []).filter((r) => !r.completed).length;
   $('fileMetric').textContent = (state.session.files || []).length;
 }
@@ -252,6 +250,8 @@ function render() {
 
   $('sessionPane').style.display = 'block';
   $('welcome').textContent = `Welcome, ${state.session.name}`;
+  $('clientLabel').textContent = String(state.session.name || 'NEXUS CLIENT').toUpperCase();
+  $('homeSubtext').textContent = `${state.session.name} welcome center for document requests, secure file exchange, and status updates.`;
   $('status').innerHTML = `Status: <b>${esc(state.session.status)}</b>`;
   $('years').textContent = `Tax Years: ${state.session.taxYears.join(', ')}`;
   renderYearSelectors();
@@ -350,8 +350,14 @@ $('clientUploadCancelBtn').onclick = () => {
 };
 
 $('navClientDashboard').onclick = () => setView('overview');
-$('navClientRequests').onclick = () => setView('requests');
 $('navClientFiles').onclick = () => setView('files');
+$('actionOpenRequests').onclick = () => setView('requests');
+$('actionOpenFiles').onclick = () => setView('files');
+$('actionMeeting').onclick = () => setError('Meeting scheduling will be enabled by your preparer.');
+$('actionHistory').onclick = () => { setView('overview'); document.getElementById('recentFiles')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+$('meetingBtn').onclick = () => setError('Meeting scheduling will be enabled by your preparer.');
+$('historyBtn').onclick = () => { setView('overview'); document.getElementById('recentFiles')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+$('backHomeBtn').onclick = () => setView('overview');
 $('closePopup').onclick = () => {
   state.popupDismissed = true;
   document.querySelectorAll('.requestFile').forEach((el) => { el.value = ''; });
