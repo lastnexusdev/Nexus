@@ -201,6 +201,11 @@ function renderFileManager() {
     return;
   }
 
+  if (!grouped.has(state.fileFolder)) {
+    state.fileFolder = null;
+    return renderFileManager();
+  }
+
   $('clientFolders').style.display = 'none';
   $('clientFiles').style.display = 'block';
   $('backToClientFolders').style.display = 'inline-block';

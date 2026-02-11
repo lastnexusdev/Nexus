@@ -342,11 +342,7 @@ function normalizeFolderName(name) {
 function renderClientFilesPage() {
   if (!state.selected) return;
   const byYear = filesByYearAndFolder(state.selected);
-  const templateYears = (state.selected.taxYears || []).map(String);
-  const currentYear = new Date().getFullYear();
-  const lastTen = Array.from({ length: 11 }, (_, i) => String(currentYear - i));
-  const yearSet = new Set([...templateYears, ...lastTen, ...Array.from(byYear.keys())]);
-  const years = Array.from(yearSet).sort((a, b) => Number(b) - Number(a));
+  const years = Array.from(byYear.keys()).sort((a, b) => Number(b) - Number(a));
 
   const crumb = state.fileManagerYear
     ? (state.fileManagerFolder ? `Client Files / TaxYear${state.fileManagerYear} / ${state.fileManagerFolder}` : `Client Files / TaxYear${state.fileManagerYear}`)
@@ -356,9 +352,9 @@ function renderClientFilesPage() {
   if (!state.fileManagerYear) {
     $('fileManagerFolders').style.display = 'block';
     $('fileManagerFiles').style.display = 'none';
-    $('fileManagerFolders').innerHTML = years
-      .map((y) => `<button class="folder-btn year-btn" data-year="${esc(y)}">📁 TaxYear${esc(y)}</button>`)
-      .join('') || '<div class="small muted">No tax year roots yet.</div>';
+    $('fileManagerFolders').innerHTML = years.length
+      ? years.map((y) => `<button class="folder-btn year-btn" data-year="${esc(y)}">📁 TaxYear${esc(y)}</button>`).join('')
+      : '<div class="small muted">No folders with files yet.</div>'; 
 
     document.querySelectorAll('.year-btn').forEach((el) => {
       el.onclick = () => {
@@ -371,22 +367,30 @@ function renderClientFilesPage() {
   }
 
   const yearFoldersRaw = byYear.get(state.fileManagerYear) || new Map();
+  if (!byYear.has(state.fileManagerYear)) {
+    state.fileManagerYear = null;
+    state.fileManagerFolder = null;
+    return renderClientFilesPage();
+  }
   const rolled = new Map();
   for (const [folder, files] of yearFoldersRaw.entries()) {
     const key = normalizeFolderName(folder);
     if (!rolled.has(key)) rolled.set(key, []);
     rolled.get(key).push(...files);
   }
-  const defaultFolders = ['Intake/W2', 'Intake/1099', 'Intake/K1', 'Workpapers', 'Filed Returns', 'Misc'];
-  for (const f of defaultFolders) if (!rolled.has(f)) rolled.set(f, []);
-  const folderNames = Array.from(rolled.keys()).sort();
+  const folderNames = Array.from(rolled.entries())
+    .filter(([, files]) => files.length > 0)
+    .map(([folder]) => folder)
+    .sort();
 
   if (!state.fileManagerFolder) {
     $('fileManagerFolders').style.display = 'block';
     $('fileManagerFiles').style.display = 'none';
     $('fileManagerFolders').innerHTML = `
       <button id="backToYearRootsBtn" style="width:auto;margin-bottom:8px;">← Back to tax year roots</button>
-      ${folderNames.map((folder) => `<button class="folder-btn" data-folder="${esc(folder)}">📁 ${esc(folder)} (${rolled.get(folder).length})</button>`).join('')}
+      ${folderNames.length
+        ? folderNames.map((folder) => `<button class="folder-btn" data-folder="${esc(folder)}">📁 ${esc(folder)} (${rolled.get(folder).length})</button>`).join('')
+        : '<div class="small muted">No folders with files in this tax year.</div>'}
     `;
 
     $('backToYearRootsBtn').onclick = () => {
@@ -401,6 +405,11 @@ function renderClientFilesPage() {
       };
     });
     return;
+  }
+
+  if (!rolled.has(state.fileManagerFolder)) {
+    state.fileManagerFolder = null;
+    return renderClientFilesPage();
   }
 
   const files = rolled.get(state.fileManagerFolder) || [];
