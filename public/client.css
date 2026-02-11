@@ -62,6 +62,13 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .small { font-size: 12px; }
 .error { color: var(--error); min-height: 18px; }
 .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+
+.deadline-bar { margin-bottom: 12px; }
+.deadline-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px; min-width: 380px; }
+.deadline-item { border:1px solid var(--line); border-radius:10px; padding:8px; background: rgba(255,255,255,.02); }
+.deadline-item span { display:block; font-size:11px; color:var(--muted); }
+.deadline-item b { font-size:1rem; }
+
 .metric { border: 1px solid var(--line); border-radius: 9px; padding: 8px; background: rgba(255,255,255,.02); }
 .metric span { display: block; font-size: 11px; color: var(--muted); }
 .metric b { font-size: 1.05rem; }
@@ -145,5 +152,5 @@ button.primary {
 }
 
 @media (max-width: 1000px) {
-  .grid.two, .summary-grid { grid-template-columns: 1fr; }
+  .grid.two, .summary-grid, .deadline-grid { grid-template-columns: 1fr; }
 }

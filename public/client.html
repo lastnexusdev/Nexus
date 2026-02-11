@@ -19,6 +19,20 @@
       </header>
 
       <main class="wrap">
+
+        <section class="card deadline-bar">
+          <div class="row">
+            <div>
+              <h3 style="margin:0">Important Deadlines</h3>
+              <div class="muted small">Configured by your tax office.</div>
+            </div>
+            <div class="deadline-grid">
+              <div class="deadline-item"><span>Tax Season Start</span><b id="startCountdown">--</b><div id="startDateText" class="small muted">--</div></div>
+              <div class="deadline-item"><span>Tax Season End</span><b id="endCountdown">--</b><div id="endDateText" class="small muted">--</div></div>
+            </div>
+          </div>
+        </section>
+
         <div id="adminJump" class="card banner" style="display:none">
           <b>Opened from Admin:</b> You are now in this specific client's portal dashboard.
           <a href="/admin" class="back-link">Back to Admin</a>

@@ -92,3 +92,6 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 }
 
 #addTaxYearSelect { min-width: 180px; }
+
+.notif-open-btn { width:auto; margin-top:6px; padding:5px 8px; font-size:12px; }
+#settingsFeedback { margin-top:8px; }

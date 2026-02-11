@@ -22,6 +22,7 @@
           <button id="navDashboard" class="nav-btn active">Dashboard</button>
           <button id="navClients" class="nav-btn">Clients</button>
           <button id="navNotices" class="nav-btn">Notices</button>
+          <button id="navSettings" class="nav-btn">Settings</button>
         </nav>
 
         <div class="sidebar-footer">
@@ -182,6 +183,20 @@
               <div id="noticeBoard" class="list"></div>
             </article>
           </section>
+
+          <section id="viewSettings" class="view" style="display:none">
+            <article class="card">
+              <h3>Settings</h3>
+              <p class="small muted">Configure portal deadlines shown to clients.</p>
+              <label class="small muted">Tax Season Start</label>
+              <input id="taxSeasonStart" type="date" />
+              <label class="small muted">Tax Season End</label>
+              <input id="taxSeasonEnd" type="date" />
+              <button id="saveSettings" class="primary">Save Settings</button>
+              <div id="settingsFeedback" class="small muted"></div>
+            </article>
+          </section>
+
         </main>
       </div>
     </div>

@@ -10,7 +10,8 @@ const state = {
   fileManagerYear: null,
   fileManagerFolder: null,
   notifPanelOpen: false,
-  notifSeenIds: new Set()
+  notifSeenIds: new Set(),
+  settings: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -57,6 +58,13 @@ function setTaxYearFeedback(msg = '', ok = true) {
   el.textContent = msg;
   el.style.color = ok ? '#2f7d32' : '#a12e2e';
 }
+function setSettingsFeedback(msg = '', ok = true) {
+  const el = $('settingsFeedback');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? '#2f7d32' : '#a12e2e';
+}
+
 
 function getClientUploadNotifications() {
   const map = new Map((state.clients || []).map((c) => [c.id, c.name]));
@@ -73,8 +81,23 @@ function renderNotifications() {
   const unread = items.filter((n) => !state.notifSeenIds.has(n.id));
   countEl.textContent = String(unread.length);
   panel.innerHTML = items.length
-    ? items.slice(0, 20).map((n) => `<div class="notif-item"><b>${esc(n.clientName)}</b><div class="small muted">${esc(n.at)}</div><div class="small">Client submitted files.</div></div>`).join('')
+    ? items.slice(0, 20).map((n) => `<div class="notif-item"><b>${esc(n.clientName)}</b><div class="small muted">${esc(n.at)}</div><div class="small">Client submitted files.</div><button class="notif-open-btn" data-client-id="${esc(n.clientId || '')}">Open Client</button></div>`).join('')
     : '<div class="small muted">No new client submissions.</div>';
+
+  panel.querySelectorAll('.notif-open-btn').forEach((btn) => {
+    btn.onclick = async (ev) => {
+      ev.stopPropagation();
+      const clientId = btn.getAttribute('data-client-id');
+      if (!clientId) return;
+      state.selectedId = clientId;
+      await loadSelected();
+      setView('clients');
+      state.notifPanelOpen = false;
+      state.notifSeenIds.add(items.find((i) => i.clientId === clientId)?.id);
+      renderAll();
+    };
+  });
+
   panel.style.display = state.notifPanelOpen ? 'block' : 'none';
 }
 
@@ -83,11 +106,13 @@ function setView(view) {
   $('viewDashboard').style.display = view === 'dashboard' ? 'block' : 'none';
   $('viewClients').style.display = view === 'clients' ? 'block' : 'none';
   $('viewNotices').style.display = view === 'notices' ? 'block' : 'none';
-  ['navDashboard', 'navClients', 'navNotices'].forEach((id) => $(id).classList.remove('active'));
+  $('viewSettings').style.display = view === 'settings' ? 'block' : 'none';
+  ['navDashboard', 'navClients', 'navNotices', 'navSettings'].forEach((id) => $(id).classList.remove('active'));
   if (view === 'dashboard') $('navDashboard').classList.add('active');
   if (view === 'clients') $('navClients').classList.add('active');
   if (view === 'notices') $('navNotices').classList.add('active');
-  $('topTitle').textContent = view === 'dashboard' ? 'Dashboard' : view === 'clients' ? 'Clients' : 'Notices';
+  if (view === 'settings') $('navSettings').classList.add('active');
+  $('topTitle').textContent = view === 'dashboard' ? 'Dashboard' : view === 'clients' ? 'Clients' : view === 'notices' ? 'Notices' : 'Settings';
 }
 
 function tickClock() {
@@ -161,6 +186,12 @@ function renderNoticesPage() {
     notices
       .map((n) => `<div class="item notice-${n.level}"><div class="row"><b>${esc(n.name)}</b><span class="pill">${esc(n.status)}</span></div><div class="small muted">Missing docs: ${n.missingCount}</div><div>${esc(n.message)}</div></div>`)
       .join('') || '<div class="small muted">No notices.</div>';
+}
+
+function renderSettingsPage() {
+  const d = state.settings?.deadlines || {};
+  if ($('taxSeasonStart')) $('taxSeasonStart').value = d.taxSeasonStart || '';
+  if ($('taxSeasonEnd')) $('taxSeasonEnd').value = d.taxSeasonEnd || '';
 }
 
 function filteredClients() {
@@ -356,20 +387,23 @@ function renderAll() {
   renderDashboard();
   renderClientsPage();
   renderNoticesPage();
+  renderSettingsPage();
   renderNotifications();
 }
 
 async function refresh() {
   try {
     setError();
-    const [meta, dash, clients] = await Promise.all([
+    const [meta, dash, clients, settings] = await Promise.all([
       jfetch('/api/meta'),
       jfetch('/api/admin/dashboard'),
-      jfetch('/api/admin/clients?q=')
+      jfetch('/api/admin/clients?q='),
+      jfetch('/api/admin/settings')
     ]);
     state.meta = meta;
     state.dash = dash;
     state.clients = clients;
+    state.settings = settings;
 
     if (state.selectedId) {
       await loadSelected();
@@ -406,6 +440,7 @@ async function uploadFile(file, source = 'upload') {
 $('navDashboard').onclick = () => setView('dashboard');
 $('navClients').onclick = () => setView('clients');
 $('navNotices').onclick = () => setView('notices');
+$('navSettings').onclick = () => setView('settings');
 
 $('search').addEventListener('input', (e) => {
   state.pickerQuery = e.target.value;
@@ -450,6 +485,25 @@ $('fileInput').onchange = async (e) => {
     e.target.value = '';
   } catch (err) {
     setError(err.message);
+  }
+};
+
+$('saveSettings').onclick = async () => {
+  try {
+    await jfetch('/api/admin/settings', {
+      method: 'PATCH',
+      headers: HEADERS,
+      body: JSON.stringify({
+        deadlines: {
+          taxSeasonStart: $('taxSeasonStart').value,
+          taxSeasonEnd: $('taxSeasonEnd').value
+        }
+      })
+    });
+    setSettingsFeedback('Settings saved.');
+    await refresh();
+  } catch (e) {
+    setSettingsFeedback(e.message, false);
   }
 };
 

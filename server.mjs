@@ -31,7 +31,13 @@ function ensureDb() {
       users: [
         { id: 'u-admin', name: 'Admin User', role: 'Admin', token: 'admin-demo' },
         { id: 'u-prep', name: 'Preparer User', role: 'Preparer', token: 'prep-demo' }
-      ]
+      ],
+      settings: {
+        deadlines: {
+          taxSeasonStart: `${new Date().getFullYear()}-01-15`,
+          taxSeasonEnd: `${new Date().getFullYear()}-04-15`
+        }
+      }
     }, null, 2));
   }
 }
@@ -45,6 +51,12 @@ function normalizeDbShape(db) {
     { id: 'u-admin', name: 'Admin User', role: 'Admin', token: 'admin-demo' },
     { id: 'u-prep', name: 'Preparer User', role: 'Preparer', token: 'prep-demo' }
   ];
+
+  if (!db.settings || typeof db.settings !== 'object') db.settings = {};
+  if (!db.settings.deadlines || typeof db.settings.deadlines !== 'object') db.settings.deadlines = {};
+  const y = new Date().getFullYear();
+  if (!db.settings.deadlines.taxSeasonStart) db.settings.deadlines.taxSeasonStart = `${y}-01-15`;
+  if (!db.settings.deadlines.taxSeasonEnd) db.settings.deadlines.taxSeasonEnd = `${y}-04-15`;
 
   for (const client of db.clients) {
     if (!Array.isArray(client.files)) client.files = [];
@@ -137,7 +149,7 @@ function routeApi(req, res) {
   const a = actor(req);
 
   if (url.pathname === '/api/meta' && req.method === 'GET') {
-    return send(res, 200, { statuses: STATUS, folders: DEFAULT_FOLDERS, entities: Object.keys(REQUIRED).filter((k) => k !== 'default') });
+    return send(res, 200, { statuses: STATUS, folders: DEFAULT_FOLDERS, entities: Object.keys(REQUIRED).filter((k) => k !== 'default'), deadlines: db.settings.deadlines });
   }
 
   if (url.pathname === '/api/admin/dashboard' && req.method === 'GET') {
@@ -152,6 +164,25 @@ function routeApi(req, res) {
       missing,
       audit: db.audit.slice(0, 25)
     });
+  }
+
+  if (url.pathname === '/api/admin/settings' && req.method === 'GET') {
+    if (!['Admin', 'Preparer', 'Reviewer'].includes(a.role)) return send(res, 403, { error: 'Forbidden' });
+    return send(res, 200, db.settings);
+  }
+
+  if (url.pathname === '/api/admin/settings' && req.method === 'PATCH') {
+    if (!['Admin'].includes(a.role)) return send(res, 403, { error: 'Forbidden' });
+    return parseBody(req).then((p) => {
+      const ds = String(p?.deadlines?.taxSeasonStart || '').trim();
+      const de = String(p?.deadlines?.taxSeasonEnd || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(ds) || !/^\d{4}-\d{2}-\d{2}$/.test(de)) return send(res, 400, { error: 'Dates must be YYYY-MM-DD' });
+      db.settings.deadlines.taxSeasonStart = ds;
+      db.settings.deadlines.taxSeasonEnd = de;
+      addAudit(db, { actor: a.user, role: a.role, action: 'UPDATE_SETTINGS', detail: `${ds}..${de}` });
+      saveDb(db);
+      return send(res, 200, db.settings);
+    }).catch((e) => send(res, 400, { error: e.message }));
   }
 
   if (url.pathname === '/api/admin/clients' && req.method === 'GET') {

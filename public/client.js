@@ -1,4 +1,4 @@
-const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false };
+const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false, meta: null };
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -30,6 +30,42 @@ function setError(msg = '') { $('error').textContent = msg; }
 
 function setUploadNotice(msg = '') {
   $('clientUploadNotice').textContent = msg;
+}
+
+function formatDate(value) {
+  if (!value) return '--';
+  const d = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString();
+}
+
+function countdownText(value) {
+  if (!value) return '--';
+  const target = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return '--';
+  const now = new Date();
+  const diff = target.getTime() - now.getTime();
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days > 0) return `${days} day${days === 1 ? '' : 's'} remaining`;
+  if (days === 0) return 'Today';
+  return `${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`;
+}
+
+function renderDeadlines() {
+  const d = state.meta?.deadlines || {};
+  $('startDateText').textContent = d.taxSeasonStart ? `Date: ${formatDate(d.taxSeasonStart)}` : 'Date: --';
+  $('endDateText').textContent = d.taxSeasonEnd ? `Date: ${formatDate(d.taxSeasonEnd)}` : 'Date: --';
+  $('startCountdown').textContent = countdownText(d.taxSeasonStart);
+  $('endCountdown').textContent = countdownText(d.taxSeasonEnd);
+}
+
+async function loadMeta() {
+  try {
+    state.meta = await jfetch('/api/meta');
+  } catch {
+    state.meta = null;
+  }
+  renderDeadlines();
 }
 
 function setView(view) {
@@ -191,6 +227,7 @@ function maybeShowRequestPopup() {
 }
 
 function render() {
+  renderDeadlines();
   renderSummary();
   if (!state.session) {
     $('sessionPane').style.display = 'none';
@@ -319,4 +356,6 @@ if (qpCode) {
 const savedTheme = (() => { try { return localStorage.getItem('nexus.portal.theme'); } catch { return null; } })();
 applyTheme(savedTheme || 'light');
 setView('overview');
+loadMeta();
+setInterval(renderDeadlines, 60_000);
 if (qpCode) signIn();

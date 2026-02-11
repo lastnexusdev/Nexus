@@ -88,6 +88,9 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Admin client creation no longer requires tax year entry; tax years are now managed from client file operations.
 - Added Admin **Add Tax Year** control (last 10 years + current) to create tax-year roots for past-year organization.
 - Admin top bar now includes a **bell notification** for recent client submissions (driven by `CLIENT_UPLOAD` audit events).
+- Added **Settings** page in Admin to configure client-portal deadlines (`taxSeasonStart`, `taxSeasonEnd`).
+- Added client-portal top **Important Deadlines** bar with countdown to start/end dates from Admin settings.
+- Notification bell now includes an **Open Client** action for each client submission to jump directly into that client workspace.
 - Added request submission feedback in Admin (validation + success/error message) to prevent accidental duplicate requests.
 - Added status distribution graph bars and at-risk client notices.
 - Added dedicated Clients and Notices pages in left navigation for cleaner workflow separation.
