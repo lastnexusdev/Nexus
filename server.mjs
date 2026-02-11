@@ -88,6 +88,8 @@ function normalizeDbShape(db) {
     if (!client.status) client.status = 'In Progress';
     if (client.status === 'Intake Received') client.status = 'In Progress';
     if (!client.entityType) client.entityType = '1040';
+    if (typeof client.email !== 'string') client.email = '';
+    client.email = String(client.email || '').trim();
     if (!client.portalCode) client.portalCode = `portal-${Math.random().toString(36).slice(2, 8)}`;
   }
 
@@ -209,7 +211,7 @@ function routeApi(req, res) {
 
   if (url.pathname === '/api/admin/clients' && req.method === 'GET') {
     const q = (url.searchParams.get('q') || '').toLowerCase();
-    return send(res, 200, db.clients.filter((c) => !q || [displayName(c), c.firstName, c.lastName, c.name, c.entityType, c.status, c.assignedStaff, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)));
+    return send(res, 200, db.clients.filter((c) => !q || [displayName(c), c.firstName, c.lastName, c.name, c.entityType, c.status, c.assignedStaff, c.email, ...(c.identifiers || [])].join(' ').toLowerCase().includes(q)));
   }
 
   if (url.pathname === '/api/admin/clients' && req.method === 'POST') {
@@ -227,6 +229,7 @@ function routeApi(req, res) {
         entityType: p.entityType || '1040',
         taxYears: Array.isArray(p.taxYears) ? p.taxYears.map(String) : [],
         status: p.status || 'In Progress',
+        email: String(p.email || '').trim(),
         assignedStaff: p.assignedStaff || '',
         identifiers: p.identifiers || [],
         files: [],

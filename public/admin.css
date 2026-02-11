@@ -111,3 +111,8 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 
 .filter-toolbar { align-items:center; gap:10px; margin-top:10px; padding-top:8px; border-top:1px solid #e2e7f2; }
 .filter-toolbar select, .filter-toolbar button { margin-top:0; }
+
+.client-table th.sortable { cursor: pointer; user-select: none; position: relative; }
+.client-table th.sortable::after { content: '⇅'; font-size: 11px; margin-left: 6px; color: #8a96b3; }
+.client-table th.sortable[data-dir='asc']::after { content: '↑'; color: #6d213c; }
+.client-table th.sortable[data-dir='desc']::after { content: '↓'; color: #6d213c; }

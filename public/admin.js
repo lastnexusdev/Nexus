@@ -8,7 +8,8 @@ const state = {
   view: 'dashboard',
   pickerQuery: '',
   filters: { status: '', entity: '', staff: '' },
-  sortName: 'az',
+  sortBy: 'lastName',
+  sortDir: 'asc',
   fileManagerYear: null,
   fileManagerFolder: null,
   notifPanelOpen: false,
@@ -249,7 +250,6 @@ function populateClientFilters() {
   statusEl.value = state.filters.status;
   entityEl.value = state.filters.entity;
   staffEl.value = state.filters.staff;
-  $('sortName').value = state.sortName;
 }
 
 function clientRowTone(client) {
@@ -271,26 +271,39 @@ function renderFullClientList() {
     .sort((a, b) => {
       const an = clientNameParts(a);
       const bn = clientNameParts(b);
-      const lastCmp = String(an.lastName || '').localeCompare(String(bn.lastName || ''), undefined, { sensitivity: 'base' });
-      const firstCmp = String(an.firstName || '').localeCompare(String(bn.firstName || ''), undefined, { sensitivity: 'base' });
-      const dir = state.sortName === 'za' ? -1 : 1;
-      return dir * (lastCmp || firstCmp || String(clientDisplayName(a)).localeCompare(String(clientDisplayName(b))));
+      const primaryKey = state.sortBy === 'firstName' ? 'firstName' : 'lastName';
+      const secondaryKey = primaryKey === 'firstName' ? 'lastName' : 'firstName';
+      const primaryCmp = String(an[primaryKey] || '').localeCompare(String(bn[primaryKey] || ''), undefined, { sensitivity: 'base' });
+      const secondaryCmp = String(an[secondaryKey] || '').localeCompare(String(bn[secondaryKey] || ''), undefined, { sensitivity: 'base' });
+      const fallbackCmp = String(clientDisplayName(a)).localeCompare(String(clientDisplayName(b)), undefined, { sensitivity: 'base' });
+      const dir = state.sortDir === 'desc' ? -1 : 1;
+      return dir * (primaryCmp || secondaryCmp || fallbackCmp);
     });
 
   $('fullClientList').innerHTML = rows.length
     ? rows.map((c) => {
       const parts = clientNameParts(c);
       return `<tr class="${clientRowTone(c)}">
+        <td><span class="status-chip">${esc(c.status)}</span></td>
         <td><b>${esc(parts.firstName || '-')}</b></td>
         <td>${esc(parts.lastName || '-')}</td>
         <td>${esc(c.entityType)}</td>
-        <td><span class="status-chip">${esc(c.status)}</span></td>
+        <td>${esc(c.email || '-')}</td>
         <td>${esc(c.assignedStaff || 'Unassigned')}</td>
-        <td>${esc((c.taxYears || []).join(', ') || '-')}</td>
         <td><button class="selectClientRowBtn" data-id="${esc(c.id)}" style="width:auto;">Open</button></td>
       </tr>`;
     }).join('')
     : '<tr><td colspan="7" class="small muted">No clients match the current filters.</td></tr>';
+
+
+  const firstHead = $('sortFirstName');
+  const lastHead = $('sortLastName');
+  if (firstHead && lastHead) {
+    firstHead.classList.toggle('active-sort', state.sortBy === 'firstName');
+    lastHead.classList.toggle('active-sort', state.sortBy === 'lastName');
+    firstHead.dataset.dir = state.sortBy === 'firstName' ? state.sortDir : '';
+    lastHead.dataset.dir = state.sortBy === 'lastName' ? state.sortDir : '';
+  }
 
   document.querySelectorAll('.selectClientRowBtn').forEach((el) => {
     el.onclick = async () => {
@@ -540,19 +553,40 @@ $('filterStaff').onchange = (e) => {
   renderClientsPage();
 };
 
-$('sortName').onchange = (e) => {
-  state.sortName = e.target.value || 'az';
-  renderClientsPage();
-};
 
 $('clearFilters').onclick = () => {
   state.filters = { status: '', entity: '', staff: '' };
-  state.sortName = 'az';
   state.pickerQuery = '';
   $('search').value = '';
   renderClientsPage();
 };
 
+
+
+function applyNameSort(column) {
+  if (state.sortBy === column) {
+    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sortBy = column;
+    state.sortDir = 'asc';
+  }
+  renderClientsPage();
+}
+
+$('sortFirstName').onclick = () => applyNameSort('firstName');
+$('sortLastName').onclick = () => applyNameSort('lastName');
+$('sortFirstName').onkeydown = (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    applyNameSort('firstName');
+  }
+};
+$('sortLastName').onkeydown = (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    applyNameSort('lastName');
+  }
+};
 
 $('createClient').onclick = async () => {
   try {
@@ -563,11 +597,13 @@ $('createClient').onclick = async () => {
         firstName: $('newFirstName').value.trim(),
         lastName: $('newLastName').value.trim(),
         entityType: $('newEntity').value,
+        email: $('newEmail').value.trim(),
         assignedStaff: $('newStaff').value.trim()
       })
     });
     $('newFirstName').value = '';
     $('newLastName').value = '';
+    $('newEmail').value = '';
     setView('clients');
     await refresh();
   } catch (e) {

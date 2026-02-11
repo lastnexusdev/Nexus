@@ -110,6 +110,7 @@
                   <input id="newLastName" placeholder="Last Name" />
                 </div>
                 <select id="newEntity"><option>1040</option><option>1120</option><option>1120S</option><option>1065</option></select>
+                <input id="newEmail" type="email" placeholder="Client email" />
                 <input id="newStaff" placeholder="Assigned staff" />
                 <button id="createClient" class="primary">Create</button>
               </article>
@@ -124,22 +125,18 @@
                 <select id="filterStatus" style="width:auto;min-width:170px;"><option value="">All Statuses</option></select>
                 <select id="filterEntity" style="width:auto;min-width:130px;"><option value="">All Entities</option></select>
                 <select id="filterStaff" style="width:auto;min-width:170px;"><option value="">All Staff</option></select>
-                <select id="sortName" style="width:auto;min-width:160px;">
-                  <option value="az">Name A → Z</option>
-                  <option value="za">Name Z → A</option>
-                </select>
                 <button id="clearFilters" style="width:auto;">Clear</button>
               </div>
               <div class="table-wrap">
                 <table class="client-table">
                   <thead>
                     <tr>
-                      <th>First Name</th>
-                      <th>Last Name</th>
-                      <th>Entity</th>
                       <th>Status</th>
+                      <th id="sortFirstName" class="sortable" role="button" tabindex="0" aria-label="Sort by first name">First Name</th>
+                      <th id="sortLastName" class="sortable" role="button" tabindex="0" aria-label="Sort by last name">Last Name</th>
+                      <th>Entity</th>
+                      <th>Email</th>
                       <th>Assigned Staff</th>
-                      <th>Years</th>
                       <th>Action</th>
                     </tr>
                   </thead>
