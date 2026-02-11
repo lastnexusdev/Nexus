@@ -120,9 +120,19 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 
 /* ===================== DATA TABLE ===================== */
 .dt-table-wrap { overflow:auto; background:#fff; border:1px solid #e2e7f2; border-top:none; }
-.dt-table { width:100%; border-collapse:collapse; min-width:760px; }
-.dt-table th, .dt-table td { padding:11px 14px; text-align:left; font-size:13px; border-bottom:1px solid #edf0f5; }
-.dt-table thead th { background:#f4f6fa; color:#6a7386; font-weight:700; font-size:12px; position:sticky; top:0; z-index:2; border-bottom:2px solid #e2e7f2; }
+.dt-table { width:100%; border-collapse:collapse; min-width:760px; table-layout:fixed; }
+.dt-table th, .dt-table td { padding:11px 14px; text-align:left; font-size:13px; border-bottom:1px solid #edf0f5; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dt-table thead th { background:#f4f6fa; color:#6a7386; font-weight:700; font-size:12px; position:sticky; top:0; z-index:2; border-bottom:2px solid #e2e7f2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* Column resize handle */
+.dt-resize-handle { position:absolute; right:0; top:0; bottom:0; width:5px; cursor:col-resize; background:transparent; z-index:3; }
+.dt-resize-handle:hover, .dt-resizing .dt-resize-handle { background:#a0aec0; }
+.dt-resizing { user-select:none; }
+
+/* Column drag-reorder */
+.dt-table thead th[draggable='true'] { cursor:grab; }
+.dt-table thead th.dt-dragging { opacity:.4; }
+.dt-table thead th.dt-drag-over { box-shadow:inset 0 0 0 2px #1d1f39; }
 .dt-table tbody tr { transition:background .1s; }
 .dt-table tbody tr:hover td { background:#f5f8ff; }
 .dt-table tbody tr:last-child td { border-bottom:none; }

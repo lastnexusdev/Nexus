@@ -16,11 +16,73 @@ const state = {
   fileManagerFolder: null,
   notifPanelOpen: false,
   notifSeenIds: new Set(),
-  settings: null
+  settings: null,
+  columns: []
 };
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ========== Column Definitions (data-driven) ========== */
+const DEFAULT_COLUMNS = [
+  { id: 'status',       label: 'Status',     sortable: true,  width: 130 },
+  { id: 'firstName',    label: 'First Name',  sortable: true,  width: 140 },
+  { id: 'lastName',     label: 'Last Name',   sortable: true,  width: 140 },
+  { id: 'email',        label: 'Email',        sortable: true,  width: 200 },
+  { id: 'assignedStaff',label: 'Tax Pro',      sortable: true,  width: 140 },
+  { id: 'entityType',   label: 'Account',      sortable: true,  width: 110 },
+  { id: '_actions',     label: 'Actions',      sortable: false, width: 160 }
+];
+
+function loadColumnPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('nexus_col_prefs'));
+    if (!saved || !Array.isArray(saved.order)) return null;
+    return saved;
+  } catch { return null; }
+}
+
+function saveColumnPrefs() {
+  const prefs = {
+    order: state.columns.map((c) => c.id),
+    widths: {}
+  };
+  for (const c of state.columns) prefs.widths[c.id] = c.width;
+  localStorage.setItem('nexus_col_prefs', JSON.stringify(prefs));
+}
+
+function initColumns() {
+  const prefs = loadColumnPrefs();
+  if (!prefs) {
+    state.columns = DEFAULT_COLUMNS.map((c) => ({ ...c }));
+    return;
+  }
+  // Rebuild from saved order, preserving label/sortable from defaults
+  const defMap = Object.fromEntries(DEFAULT_COLUMNS.map((c) => [c.id, c]));
+  const cols = [];
+  for (const id of prefs.order) {
+    if (!defMap[id]) continue;
+    cols.push({ ...defMap[id], width: prefs.widths[id] || defMap[id].width });
+    delete defMap[id];
+  }
+  // Append any new columns that weren't in saved prefs
+  for (const c of Object.values(defMap)) cols.push({ ...c });
+  state.columns = cols;
+}
+
+function cellHtml(col, client) {
+  const parts = clientNameParts(client);
+  switch (col.id) {
+    case 'status':        return `<span class="status-chip ${statusChipClass(client.status)}">${esc(client.status)}</span>`;
+    case 'firstName':     return esc(parts.firstName || '-');
+    case 'lastName':      return esc(parts.lastName || '-');
+    case 'email':         return esc(client.email || '-');
+    case 'assignedStaff': return esc(client.assignedStaff || 'Unassigned');
+    case 'entityType':    return esc(client.entityType);
+    case '_actions':      return `<div class="dt-actions"><button class="dt-act-btn dt-act-archive archiveClientBtn" data-id="${esc(client.id)}">Archive &amp; Remove</button></div>`;
+    default:              return '-';
+  }
+}
 
 function splitNameParts(raw = '') {
   const parts = String(raw || '').trim().split(/\s+/).filter(Boolean);
@@ -392,11 +454,102 @@ function renderStatusTabs() {
   });
 }
 
+function renderTableHead() {
+  const head = $('clientTableHead');
+  const tr = document.createElement('tr');
+  state.columns.forEach((col, idx) => {
+    const th = document.createElement('th');
+    th.style.width = col.width + 'px';
+    th.style.minWidth = '60px';
+    th.style.position = 'relative';
+    th.setAttribute('data-col-id', col.id);
+    th.setAttribute('draggable', 'true');
+
+    if (col.sortable) {
+      th.classList.add('dt-sortable');
+      th.setAttribute('data-col', col.id);
+      th.setAttribute('role', 'button');
+      th.setAttribute('tabindex', '0');
+      th.dataset.dir = col.id === state.sortBy ? state.sortDir : '';
+      th.onclick = (e) => {
+        if (e.target.classList.contains('dt-resize-handle')) return;
+        applySort(col.id);
+      };
+      th.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applySort(col.id); }
+      };
+    }
+
+    // Label
+    const span = document.createElement('span');
+    span.textContent = col.label;
+    th.appendChild(span);
+
+    // Resize handle
+    const handle = document.createElement('div');
+    handle.className = 'dt-resize-handle';
+    handle.onmousedown = (e) => startResize(e, idx);
+    th.appendChild(handle);
+
+    // Drag-reorder events
+    th.ondragstart = (e) => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+      th.classList.add('dt-dragging');
+    };
+    th.ondragend = () => th.classList.remove('dt-dragging');
+    th.ondragover = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; th.classList.add('dt-drag-over'); };
+    th.ondragleave = () => th.classList.remove('dt-drag-over');
+    th.ondrop = (e) => {
+      e.preventDefault();
+      th.classList.remove('dt-drag-over');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      const toIdx = idx;
+      if (fromIdx === toIdx || isNaN(fromIdx)) return;
+      const moved = state.columns.splice(fromIdx, 1)[0];
+      state.columns.splice(toIdx, 0, moved);
+      saveColumnPrefs();
+      renderFullClientList();
+    };
+
+    tr.appendChild(th);
+  });
+  head.innerHTML = '';
+  head.appendChild(tr);
+}
+
+/* ---- Column Resize ---- */
+function startResize(e, colIdx) {
+  e.preventDefault();
+  e.stopPropagation();
+  const startX = e.clientX;
+  const startW = state.columns[colIdx].width;
+  const table = $('clientTable');
+  table.classList.add('dt-resizing');
+
+  const onMove = (ev) => {
+    const diff = ev.clientX - startX;
+    state.columns[colIdx].width = Math.max(60, startW + diff);
+    const th = $('clientTableHead').querySelectorAll('th')[colIdx];
+    if (th) th.style.width = state.columns[colIdx].width + 'px';
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    table.classList.remove('dt-resizing');
+    saveColumnPrefs();
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
 function renderFullClientList() {
   populateClientFilters();
   renderStatusTabs();
+  renderTableHead();
   const sorted = sortClients(filteredClients());
   const totalRows = sorted.length;
+  const colCount = state.columns.length;
 
   // Paginate
   const totalPages = Math.max(1, Math.ceil(totalRows / state.pageSize));
@@ -406,23 +559,12 @@ function renderFullClientList() {
 
   $('fullClientList').innerHTML = rows.length
     ? rows.map((c) => {
-      const parts = clientNameParts(c);
-      return `<tr class="${clientRowTone(c)}" data-client-id="${esc(c.id)}" style="cursor:pointer">
-        <td><span class="status-chip ${statusChipClass(c.status)}">${esc(c.status)}</span></td>
-        <td>${esc(parts.firstName || '-')}</td>
-        <td>${esc(parts.lastName || '-')}</td>
-        <td>${esc(c.email || '-')}</td>
-        <td>${esc(c.assignedStaff || 'Unassigned')}</td>
-        <td>${esc(c.entityType)}</td>
-        <td class="dt-actions-cell"><div class="dt-actions"><button class="dt-act-btn dt-act-archive archiveClientBtn" data-id="${esc(c.id)}">Archive &amp; Remove</button></div></td>
-      </tr>`;
+      const cells = state.columns.map((col) =>
+        `<td${col.id === '_actions' ? ' class="dt-actions-cell"' : ''}>${cellHtml(col, c)}</td>`
+      ).join('');
+      return `<tr class="${clientRowTone(c)}" data-client-id="${esc(c.id)}" style="cursor:pointer">${cells}</tr>`;
     }).join('')
-    : '<tr><td colspan="7" class="small muted" style="text-align:center;padding:28px;">No clients match the current filters.</td></tr>';
-
-  // Update sort header indicators
-  document.querySelectorAll('.dt-sortable').forEach((th) => {
-    th.dataset.dir = th.dataset.col === state.sortBy ? state.sortDir : '';
-  });
+    : `<tr><td colspan="${colCount}" class="small muted" style="text-align:center;padding:28px;">No clients match the current filters.</td></tr>`;
 
   // Pagination
   renderPagination(totalRows);
@@ -446,7 +588,6 @@ function renderFullClientList() {
           const err = await resp.json();
           throw new Error(err.error || 'Archive failed');
         }
-        // Trigger download
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -745,15 +886,7 @@ function applySort(column) {
   renderClientsPage();
 }
 
-document.querySelectorAll('.dt-sortable').forEach((th) => {
-  th.onclick = () => applySort(th.dataset.col);
-  th.onkeydown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      applySort(th.dataset.col);
-    }
-  };
-});
+// Sort handlers are now bound dynamically in renderTableHead()
 
 // Add Client modal
 $('addClientBtn').onclick = () => {
@@ -966,6 +1099,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
+initColumns();
 setInterval(tickClock, 1000);
 tickClock();
 refresh();
