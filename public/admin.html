@@ -36,7 +36,11 @@
       <div class="workspace">
         <header class="topbar">
           <div id="topTitle">Dashboard</div>
-          <div class="topbar-right">System Admin</div>
+          <div class="topbar-right">
+            <button id="notifBell" class="bell-btn" title="Client submissions">🔔 <span id="notifCount" class="notif-count">0</span></button>
+            <div id="notifPanel" class="notif-panel" style="display:none"></div>
+            <span>System Admin</span>
+          </div>
         </header>
 
         <main class="main">
@@ -136,6 +140,13 @@
                 <select id="folderSelect"></select>
                 <label class="small muted"><input id="internalOnly" type="checkbox" /> Internal only</label>
                 <input id="fileInput" type="file" />
+
+                <h4>Tax Year Roots</h4>
+                <div class="row">
+                  <select id="addTaxYearSelect" style="margin-top:0;"><option value="">Select year to add</option></select>
+                  <button id="addTaxYearBtn" style="width:auto;">Add Year</button>
+                </div>
+                <div id="taxYearFeedback" class="small muted"></div>
 
                 <h4>Checklist</h4>
                 <div id="checklist"></div>

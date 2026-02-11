@@ -85,6 +85,10 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 ## Admin UX Refresh
 
 - Main landing page is now a focused dashboard (not client-detail heavy).
+- Admin client creation no longer requires tax year entry; tax years are now managed from client file operations.
+- Added Admin **Add Tax Year** control (last 10 years + current) to create tax-year roots for past-year organization.
+- Admin top bar now includes a **bell notification** for recent client submissions (driven by `CLIENT_UPLOAD` audit events).
+- Added request submission feedback in Admin (validation + success/error message) to prevent accidental duplicate requests.
 - Added status distribution graph bars and at-risk client notices.
 - Added dedicated Clients and Notices pages in left navigation for cleaner workflow separation.
 

@@ -8,7 +8,9 @@ const state = {
   view: 'dashboard',
   pickerQuery: '',
   fileManagerYear: null,
-  fileManagerFolder: null
+  fileManagerFolder: null,
+  notifPanelOpen: false,
+  notifSeenIds: new Set()
 };
 
 const $ = (id) => document.getElementById(id);
@@ -47,6 +49,33 @@ function setReqFeedback(msg = '', ok = true) {
   if (!el) return;
   el.textContent = msg;
   el.style.color = ok ? '#2f7d32' : '#a12e2e';
+}
+
+function setTaxYearFeedback(msg = '', ok = true) {
+  const el = $('taxYearFeedback');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? '#2f7d32' : '#a12e2e';
+}
+
+function getClientUploadNotifications() {
+  const map = new Map((state.clients || []).map((c) => [c.id, c.name]));
+  return (state.dash?.audit || [])
+    .filter((a) => a.action === 'CLIENT_UPLOAD')
+    .map((a) => ({ ...a, clientName: map.get(a.clientId) || a.clientId || 'Unknown client' }));
+}
+
+function renderNotifications() {
+  const panel = $('notifPanel');
+  const countEl = $('notifCount');
+  if (!panel || !countEl) return;
+  const items = getClientUploadNotifications();
+  const unread = items.filter((n) => !state.notifSeenIds.has(n.id));
+  countEl.textContent = String(unread.length);
+  panel.innerHTML = items.length
+    ? items.slice(0, 20).map((n) => `<div class="notif-item"><b>${esc(n.clientName)}</b><div class="small muted">${esc(n.at)}</div><div class="small">Client submitted files.</div></div>`).join('')
+    : '<div class="small muted">No new client submissions.</div>';
+  panel.style.display = state.notifPanelOpen ? 'block' : 'none';
 }
 
 function setView(view) {
@@ -195,7 +224,8 @@ function renderClientFilesPage() {
   const byYear = filesByYearAndFolder(state.selected);
   const templateYears = (state.selected.taxYears || []).map(String);
   const currentYear = new Date().getFullYear();
-  const yearSet = new Set([...templateYears, String(currentYear), String(currentYear - 1), String(currentYear - 2), ...Array.from(byYear.keys())]);
+  const lastTen = Array.from({ length: 11 }, (_, i) => String(currentYear - i));
+  const yearSet = new Set([...templateYears, ...lastTen, ...Array.from(byYear.keys())]);
   const years = Array.from(yearSet).sort((a, b) => Number(b) - Number(a));
 
   const crumb = state.fileManagerYear
@@ -304,10 +334,18 @@ function renderClientsPage() {
   $('selInternal').textContent = `Internal ID: ${state.selected.clientInternalId}`;
   $('statusSelect').innerHTML = state.meta.statuses.map((s) => `<option ${s === state.selected.status ? 'selected' : ''}>${esc(s)}</option>`).join('');
   $('folderSelect').innerHTML = state.meta.folders.map((f) => `<option>${esc(f)}</option>`).join('');
-  const yset = new Set([...(state.selected.taxYears || []).map(String), String(new Date().getFullYear()), String(new Date().getFullYear() - 1), String(new Date().getFullYear() - 2)]);
-  $('uploadTaxYear').innerHTML = Array.from(yset).sort((a,b)=>Number(b)-Number(a)).map((y) => `<option>${esc(y)}</option>`).join('');
+  const currentYear = new Date().getFullYear();
+  const tenYears = Array.from({ length: 11 }, (_, i) => String(currentYear - i));
+  const existingYears = (state.selected.taxYears || []).map(String);
+  const yset = new Set([...existingYears, ...tenYears]);
+  const sortedYears = Array.from(yset).sort((a,b)=>Number(b)-Number(a));
+  $('uploadTaxYear').innerHTML = sortedYears.map((y) => `<option>${esc(y)}</option>`).join('');
+  $('addTaxYearSelect').innerHTML = '<option value="">Select year to add</option>' + sortedYears
+    .filter((y) => !existingYears.includes(String(y)))
+    .map((y) => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
   $('checklist').innerHTML = (state.selected.checklist || []).map((i) => `<div class="row"><span>${esc(i.doc)}</span><b>${i.found ? '✓' : 'Missing'}</b></div>`).join('');
   setReqFeedback('');
+  setTaxYearFeedback('');
 
   if ($('clientFilesPage').style.display === 'block') {
     renderClientFilesPage();
@@ -318,6 +356,7 @@ function renderAll() {
   renderDashboard();
   renderClientsPage();
   renderNoticesPage();
+  renderNotifications();
 }
 
 async function refresh() {
@@ -414,6 +453,30 @@ $('fileInput').onchange = async (e) => {
   }
 };
 
+$('addTaxYearBtn').onclick = async () => {
+  try {
+    const year = $('addTaxYearSelect').value;
+    if (!year) return setTaxYearFeedback('Select a year to add.', false);
+    await jfetch(`/api/admin/clients/${state.selectedId}/tax-years`, {
+      method: 'PATCH',
+      headers: HEADERS,
+      body: JSON.stringify({ year })
+    });
+    setTaxYearFeedback(`TaxYear${year} added.`);
+    await refresh();
+  } catch (e) {
+    setTaxYearFeedback(e.message, false);
+  }
+};
+
+$('notifBell').onclick = () => {
+  state.notifPanelOpen = !state.notifPanelOpen;
+  if (state.notifPanelOpen) {
+    for (const n of getClientUploadNotifications()) state.notifSeenIds.add(n.id);
+  }
+  renderNotifications();
+};
+
 $('sendReq').onclick = async () => {
   try {
     const text = $('reqText').value.trim();
@@ -474,6 +537,16 @@ $('closeClientFilesBtn').onclick = () => {
 };
 
 setView('dashboard');
+document.addEventListener('click', (e) => {
+  const panel = $('notifPanel');
+  const bell = $('notifBell');
+  if (!panel || !bell) return;
+  if (state.notifPanelOpen && !panel.contains(e.target) && !bell.contains(e.target)) {
+    state.notifPanelOpen = false;
+    renderNotifications();
+  }
+});
+
 setInterval(tickClock, 1000);
 tickClock();
 refresh();

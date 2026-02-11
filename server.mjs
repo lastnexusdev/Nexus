@@ -235,6 +235,26 @@ function routeApi(req, res) {
     }).catch((e) => send(res, 400, { error: e.message }));
   }
 
+  const adminTaxYears = url.pathname.match(/^\/api\/admin\/clients\/([^/]+)\/tax-years$/);
+  if (adminTaxYears && req.method === 'PATCH') {
+    if (!['Admin', 'Preparer'].includes(a.role)) return send(res, 403, { error: 'Forbidden' });
+    return parseBody(req).then((p) => {
+      const client = db.clients.find((c) => c.id === adminTaxYears[1]);
+      if (!client) return send(res, 404, { error: 'Client not found' });
+      const year = String(p.year || '').trim();
+      if (!/^\d{4}$/.test(year)) return send(res, 400, { error: 'Invalid year' });
+      const now = new Date().getFullYear();
+      if (Number(year) > now + 1 || Number(year) < now - 25) return send(res, 400, { error: 'Year out of range' });
+      if (!client.taxYears.includes(year)) client.taxYears.push(year);
+      client.taxYears = Array.from(new Set(client.taxYears.map(String))).sort((a,b)=>Number(b)-Number(a));
+      client.updatedAt = new Date().toISOString();
+      client.events.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), message: `TaxYear${year} root added`, by: a.user });
+      addAudit(db, { actor: a.user, role: a.role, action: 'ADD_TAX_YEAR', clientId: client.id, detail: year });
+      saveDb(db);
+      send(res, 200, { taxYears: client.taxYears });
+    }).catch((e) => send(res, 400, { error: e.message }));
+  }
+
   const adminStatus = url.pathname.match(/^\/api\/admin\/clients\/([^/]+)\/status$/);
   if (adminStatus && req.method === 'PATCH') {
     if (!['Admin', 'Reviewer'].includes(a.role)) return send(res, 403, { error: 'Forbidden' });
