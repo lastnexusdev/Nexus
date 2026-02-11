@@ -1,4 +1,5 @@
-const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false, meta: null, questionnaire: {} };
+const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false, meta: null, questionnaire: {}, meetingRoom: '' };
+const JITSI_BASE = 'https://jitsi.guildspeak.com';
 const $ = (id) => document.getElementById(id);
 const show = (id, on) => { const el = $(id); if (el) el.style.display = on ? '' : 'none'; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -83,13 +84,16 @@ function setView(view) {
   show('clientViewFiles', view === 'files');
   show('clientViewHistory', view === 'history');
   show('clientViewChecklist', view === 'checklist');
+  show('clientViewMeeting', view === 'meeting');
 
-  ['navClientDashboard', 'navClientFiles', 'historyBtn'].forEach((id) => $(id)?.classList.remove('active'));
+  ['navClientDashboard', 'navClientFiles', 'historyBtn', 'meetingBtn'].forEach((id) => $(id)?.classList.remove('active'));
   if (view === 'overview') $('navClientDashboard')?.classList.add('active');
   if (view === 'files') $('navClientFiles')?.classList.add('active');
   if (['history', 'checklist'].includes(view)) $('historyBtn')?.classList.add('active');
+  if (view === 'meeting') $('meetingBtn')?.classList.add('active');
 
   if (view === 'files') renderFileManager();
+  if (view === 'meeting') renderMeeting();
 }
 
 function filesByFolder(files = []) {
@@ -143,6 +147,27 @@ function renderChecklistQuestionnaire() {
       renderChecklistQuestionnaire();
     };
   });
+}
+
+function buildMeetingRoom() {
+  if (!state.session?.id) return '';
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  return `nexus-${state.session.id}-${today}`;
+}
+
+function buildMeetingUrl() {
+  const room = state.meetingRoom || buildMeetingRoom();
+  if (!room) return '';
+  return `${JITSI_BASE}/${encodeURIComponent(room)}`;
+}
+
+function renderMeeting() {
+  if (!state.session) return;
+  state.meetingRoom = buildMeetingRoom();
+  const url = buildMeetingUrl();
+  const frame = $('meetingFrame');
+  if (frame && frame.src !== url) frame.src = url;
+  if ($('meetingRoomLabel')) $('meetingRoomLabel').textContent = `Room: ${state.meetingRoom}`;
 }
 
 function renderSummary() {
@@ -410,15 +435,19 @@ $('navClientDashboard').onclick = () => setView('overview');
 $('navClientFiles').onclick = () => setView('files');
 $('actionOpenRequests').onclick = () => setView('requests');
 $('actionOpenFiles').onclick = () => setView('files');
-$('actionMeeting').onclick = () => setError('Meeting scheduling will be enabled by your preparer.');
+$('actionMeeting').onclick = () => setView('meeting');
 $('actionHistory').onclick = () => setView('history');
 $('actionChecklist').onclick = () => setView('checklist');
-$('meetingBtn').onclick = () => setError('Meeting scheduling will be enabled by your preparer.');
+$('meetingBtn').onclick = () => setView('meeting');
 $('historyBtn').onclick = () => setView('history');
 $('backHomeBtn').onclick = () => setView('overview');
 $('submitQuestionnaireBtn').onclick = () => {
   saveQuestionnaireProgress();
   $('questionnaireNotice').textContent = 'Questionnaire progress saved. Your preparer will review your uploaded docs and answers.';
+};
+$('refreshMeetingBtn').onclick = () => {
+  state.meetingRoom = '';
+  renderMeeting();
 };
 $('closePopup').onclick = () => {
   state.popupDismissed = true;

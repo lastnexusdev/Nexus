@@ -121,6 +121,20 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .grid.two { grid-template-columns: 1fr 1fr; }
 
 .client-view { margin-top: 12px; }
+
+.meeting-wrap {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0e1626;
+}
+#meetingFrame {
+  width: 100%;
+  min-height: 620px;
+  border: 0;
+  display: block;
+}
 .quick-upload-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .quick-upload-row select, .quick-upload-row input { width: auto; min-width: 180px; }
 
@@ -139,9 +153,9 @@ button.primary {
   cursor: pointer;
 }
 
-.list { max-height: 280px; overflow: auto; margin-top: 8px; }
+.list { max-height: none; overflow: visible; margin-top: 8px; }
 .list.no-scroll { max-height: none; overflow: visible; }
-.mini-list { max-height: 120px; }
+.mini-list { max-height: none; overflow: visible; }
 .file {
   display: flex;
   justify-content: space-between;

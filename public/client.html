@@ -133,6 +133,20 @@
           </section>
 
 
+          <section id="clientViewMeeting" class="client-view" style="display:none">
+            <article class="card">
+              <div class="row">
+                <h3 style="margin:0">Live Meeting Room</h3>
+                <button id="refreshMeetingBtn" style="width:auto;">Refresh Room</button>
+              </div>
+              <p class="muted">Secure embedded video meeting powered by your firm Jitsi server.</p>
+              <div class="meeting-wrap">
+                <iframe id="meetingFrame" title="Client Meeting" allow="camera; microphone; fullscreen; display-capture" referrerpolicy="no-referrer" loading="lazy"></iframe>
+              </div>
+              <div class="small muted" id="meetingRoomLabel"></div>
+            </article>
+          </section>
+
           <section id="clientViewHistory" class="client-view" style="display:none">
             <article class="card">
               <h3>Action History</h3>
