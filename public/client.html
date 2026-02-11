@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus Client Portal</title>
+    <link rel="stylesheet" href="/client.css" />
+  </head>
+  <body data-theme="light">
+    <div class="portal-shell">
+      <header class="portal-nav">
+        <div class="nav-left">
+          <button id="backHomeBtn" class="nav-link">◀ Back</button>
+        </div>
+        <div class="nav-center">
+          <button id="navClientDashboard" class="nav-link active">🏠 Home</button>
+          <button id="navClientFiles" class="nav-link">📁 Files</button>
+          <button id="meetingBtn" class="nav-link">🎥 Meeting</button>
+          <button id="historyBtn" class="nav-link">🧾 History</button>
+        </div>
+        <div class="nav-right">
+          <button id="themeToggle" class="toggle">🌙 Dark Mode</button>
+        </div>
+      </header>
+
+      <main class="wrap">
+        <section class="hero card">
+          <div>
+            <div class="eyebrow" id="clientLabel">NEXUS CLIENT</div>
+            <h1 id="homeHeading">Tax Client Portal Home Page</h1>
+            <p class="muted" id="homeSubtext">Sign in to view your requests, exchange files, and track return progress.</p>
+          </div>
+          <div class="hero-art" aria-hidden="true">📄🔐</div>
+        </section>
+
+        <div id="adminJump" class="card banner" style="display:none">
+          <b>Opened from Admin:</b> You are now in this specific client's portal dashboard.
+          <a href="/admin" class="back-link">Back to Admin</a>
+        </div>
+
+        <p id="error" class="error"></p>
+
+        <section id="sessionPane" style="display:none">
+          <section class="card dashboard-card" id="clientViewDashboard">
+            <div class="summary-head">
+              <div>
+                <h3 id="welcome"></h3>
+                <p id="status" class="muted"></p>
+                <p id="years" class="muted"></p>
+              </div>
+              <div class="summary-grid" id="summaryGrid" style="display:none">
+                <div class="metric"><span>Status</span><b id="statusMetric">-</b></div>
+                <div class="metric"><span>Tax Years</span><b id="yearsMetric">-</b></div>
+                <div class="metric"><span>Open Requests</span><b id="reqMetric">0</b></div>
+                <div class="metric"><span>Uploaded Files</span><b id="fileMetric">0</b></div>
+              </div>
+            </div>
+
+            <div class="action-list">
+              <article class="action-row">
+                <div class="action-icon">☑️</div>
+                <div>
+                  <h4>Actions</h4>
+                  <p class="muted">When your tax professional requests documents, they appear here.</p>
+                  <div id="requestsPreview" class="list mini-list"></div>
+                </div>
+                <button id="actionOpenRequests" class="action-btn">Open Requests</button>
+              </article>
+
+              <article class="action-row">
+                <div class="action-icon">📁</div>
+                <div>
+                  <h4>Files</h4>
+                  <p class="muted">Securely upload and review shared files in your file manager.</p>
+                </div>
+                <button id="actionOpenFiles" class="action-btn">File Manager</button>
+              </article>
+
+              <article class="action-row">
+                <div class="action-icon">🎥</div>
+                <div>
+                  <h4>Meeting</h4>
+                  <p class="muted">Need to meet your tax professional? Start with a secure scheduling request.</p>
+                </div>
+                <button id="actionMeeting" class="action-btn">Online Meeting</button>
+              </article>
+
+              <article class="action-row">
+                <div class="action-icon">🧾</div>
+                <div>
+                  <h4>History</h4>
+                  <p class="muted">Review completed uploads and status activity.</p>
+                </div>
+                <button id="actionHistory" class="action-btn">Action History</button>
+              </article>
+            </div>
+          </section>
+
+          <section id="clientViewRequests" class="client-view" style="display:none">
+            <article class="card">
+              <h3>Requested Documents</h3>
+              <p class="muted">Upload requested documents by tax year and mark requests complete.</p>
+              <div id="requests" class="list"></div>
+            </article>
+          </section>
+
+          <section id="clientViewFiles" class="client-view" style="display:none">
+            <article class="card">
+              <div class="row">
+                <h3 style="margin:0">Your File Manager</h3>
+                <button id="backToClientFolders" style="width:auto;display:none;">← Back to folders</button>
+              </div>
+              <div class="quick-upload-row">
+                <select id="clientTaxYear"></select>
+                <input id="clientFile" type="file" />
+                <button id="clientUploadBtn" class="primary" style="width:auto;">Upload Selected File</button>
+                <button id="clientUploadCancelBtn" style="width:auto;">Cancel</button>
+              </div>
+              <div id="clientUploadNotice" class="muted small"></div>
+              <div id="clientFilesBreadcrumb" class="muted small" style="margin:8px 0"></div>
+              <div id="clientFolders" class="list"></div>
+              <div id="clientFiles" class="list" style="display:none"></div>
+            </article>
+          </section>
+
+          <section class="grid two aux-panels">
+            <article class="card">
+              <h3>Checklist</h3>
+              <div id="checklist" class="list"></div>
+            </article>
+            <article class="card">
+              <h3>Recent Uploads</h3>
+              <div id="recentFiles" class="list"></div>
+            </article>
+          </section>
+        </section>
+
+        <section class="deadline-footer">
+          <h2>UPCOMING TAX DEADLINES</h2>
+          <div class="deadline-divider"></div>
+          <div class="deadline-footer-grid">
+            <article class="deadline-card">
+              <div class="days"><b id="q1Days">--</b> <span>days</span></div>
+              <div class="label">First Quarter Estimate Due</div>
+              <div id="q1Date" class="date">--</div>
+            </article>
+            <article class="deadline-card">
+              <div class="days"><b id="q2Days">--</b> <span>days</span></div>
+              <div class="label">Second Quarter Estimate Due</div>
+              <div id="q2Date" class="date">--</div>
+            </article>
+            <article class="deadline-card">
+              <div class="days"><b id="q3Days">--</b> <span>days</span></div>
+              <div class="label">Third Quarter Estimate Due</div>
+              <div id="q3Date" class="date">--</div>
+            </article>
+            <article class="deadline-card">
+              <div class="days"><b id="q4Days">--</b> <span>days</span></div>
+              <div class="label">Fourth Quarter Estimate Due</div>
+              <div id="q4Date" class="date">--</div>
+            </article>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <div id="requestPopup" class="request-popup" style="display:none">
+      <div class="popup-card">
+        <div class="row">
+          <h3 style="margin:0">Action Required</h3>
+        </div>
+        <p class="muted">Your preparer requested documents. Upload from this popup or open Requests.</p>
+        <div id="popupRequests" class="list"></div>
+        <div class="row popup-footer">
+          <button id="closePopup" class="popup-cancel">Close for now</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/client.js"></script>
+  </body>
+</html>
