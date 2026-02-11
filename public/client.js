@@ -82,7 +82,6 @@ function uploadInputHtml(requestId = '') {
       </select>
       <input class="requestFile" data-request-id="${esc(requestId)}" type="file" style="width:auto;" />
       <button class="requestUploadBtn primary" data-request-id="${esc(requestId)}" style="width:auto;">Upload</button>
-      <button class="requestCancelBtn" data-request-id="${esc(requestId)}" style="width:auto;">Cancel</button>
     </div>
     <div class="small muted requestUploadNotice" data-request-id="${esc(requestId)}"></div>
   `;
@@ -111,14 +110,6 @@ function bindRequestUploadInputs() {
     };
   });
 
-  document.querySelectorAll('.requestCancelBtn').forEach((el) => {
-    el.onclick = () => {
-      const reqId = el.getAttribute('data-request-id') || '';
-      const input = document.querySelector(`.requestFile[data-request-id="${CSS.escape(reqId)}"]`);
-      if (input) input.value = '';
-      requestNotice(reqId, 'Upload canceled.');
-    };
-  });
 }
 
 async function markRequestComplete(id) {
@@ -309,6 +300,8 @@ $('navClientRequests').onclick = () => setView('requests');
 $('navClientFiles').onclick = () => setView('files');
 $('closePopup').onclick = () => {
   state.popupDismissed = true;
+  document.querySelectorAll('.requestFile').forEach((el) => { el.value = ''; });
+  document.querySelectorAll('.requestUploadNotice').forEach((el) => { el.textContent = ''; });
   $('requestPopup').style.display = 'none';
 };
 $('backToClientFolders').onclick = () => {
