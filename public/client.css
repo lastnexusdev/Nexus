@@ -140,6 +140,7 @@ button.primary {
 }
 
 .list { max-height: 280px; overflow: auto; margin-top: 8px; }
+.list.no-scroll { max-height: none; overflow: visible; }
 .mini-list { max-height: 120px; }
 .file {
   display: flex;

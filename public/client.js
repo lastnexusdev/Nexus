@@ -315,15 +315,16 @@ function render() {
     ? pendingRequests.slice(0, 4).map((r) => `<div class="file"><div>${esc(r.text)}</div><span class="pill">${esc(r.priority || 'normal')}</span></div>`).join('')
     : '<div class="muted">No active requests.</div>';
 
-  $('requests').innerHTML = (state.session.requests || []).length
-    ? (state.session.requests || []).map((r) => `
+  const openRequests = (state.session.requests || []).filter((r) => !r.completed);
+  $('requests').innerHTML = openRequests.length
+    ? openRequests.map((r) => `
       <div class="request-card">
         <div class="row"><b>${esc(r.text)}</b><span class="pill">${esc(r.priority || 'normal')}</span></div>
-        <div class="muted small">${r.completed ? 'Completed' : 'Pending upload'}</div>
-        ${r.completed ? '' : uploadInputHtml(r)}
+        <div class="muted small">Pending upload</div>
+        ${uploadInputHtml(r)}
       </div>
     `).join('')
-    : '<div class="muted">No requests right now.</div>';
+    : '<div class="muted">No open document requests.</div>';
 
   $('recentFiles').innerHTML = (state.session.files || []).slice(0, 12).map((f) => `
     <div class="file">
