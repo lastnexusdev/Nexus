@@ -150,7 +150,7 @@ function bindRequestUploadInputs() {
         const ok = await markRequestComplete(reqId);
         if (!ok) requestNotice(reqId, 'Uploaded, but request still open.');
       }
-      await signIn();
+      await loadSession();
     };
   });
 
@@ -296,13 +296,19 @@ function render() {
   maybeShowRequestPopup();
 }
 
-async function signIn() {
+async function loadSession() {
   try {
     setError('');
-    state.portalCode = $('portalCode').value.trim();
-    if (!state.portalCode) return setError('Enter a portal code.');
+    if (!state.portalCode) {
+      state.session = null;
+      setError('No active portal session found. Please use your client login link.');
+      render();
+      return;
+    }
     state.session = await jfetch(`/api/client/session?portalCode=${encodeURIComponent(state.portalCode)}`);
+    try { localStorage.setItem('nexus.portal.code', state.portalCode); } catch {}
     state.popupDismissed = false;
+    setError('');
     render();
   } catch (e) {
     setError(e.message);
@@ -334,7 +340,6 @@ async function upload(file, source = 'client-upload', category = null, taxYear =
 }
 
 $('themeToggle').onclick = () => applyTheme(state.theme === 'dark' ? 'light' : 'dark');
-$('signIn').onclick = signIn;
 $('clientUploadBtn').onclick = async () => {
   const file = $('clientFile').files?.[0];
   if (!file) return setUploadNotice('Select a file first.');
@@ -342,7 +347,7 @@ $('clientUploadBtn').onclick = async () => {
   await upload(file, 'client-upload');
   $('clientFile').value = '';
   setUploadNotice('Upload complete.');
-  await signIn();
+  await loadSession();
 };
 $('clientUploadCancelBtn').onclick = () => {
   $('clientFile').value = '';
@@ -372,13 +377,13 @@ $('backToClientFolders').onclick = () => {
 const params = new URLSearchParams(window.location.search);
 const qpCode = params.get('code');
 if (params.get('from') === 'admin') $('adminJump').style.display = 'block';
-if (qpCode) {
-  $('portalCode').value = qpCode;
-}
+state.portalCode = qpCode || (() => { try { return localStorage.getItem('nexus.portal.code') || ''; } catch { return ''; } })();
+if (state.portalCode) { try { localStorage.setItem('nexus.portal.code', state.portalCode); } catch {} }
+
 
 const savedTheme = (() => { try { return localStorage.getItem('nexus.portal.theme'); } catch { return null; } })();
 applyTheme(savedTheme || 'light');
 setView('overview');
 loadMeta();
 setInterval(renderDeadlines, 60_000);
-if (qpCode) signIn();
+loadSession();
