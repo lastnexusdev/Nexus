@@ -1,0 +1,253 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus Admin</title>
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="logo-row">
+          <div class="dot"></div>
+          <div class="brand-wrap">
+            <div class="brand">Nexus TaxOps</div>
+            <div class="brand-sub">Admin Suite</div>
+          </div>
+        </div>
+
+        <div class="menu-label">MAIN</div>
+        <nav class="nav">
+          <button id="navDashboard" class="nav-btn active">Dashboard</button>
+          <button id="navClients" class="nav-btn">Clients</button>
+          <button id="navNotices" class="nav-btn">Notices</button>
+          <button id="navSettings" class="nav-btn">Settings</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="avatar">SA</div>
+          <div>
+            <div class="footer-name">System Admin</div>
+            <div class="footer-role">Administrator</div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div id="topTitle">Dashboard</div>
+          <div class="topbar-right">
+            <button id="notifBell" class="bell-btn" title="Client submissions">🔔 <span id="notifCount" class="notif-count">0</span></button>
+            <div id="notifPanel" class="notif-panel" style="display:none"></div>
+            <span>System Admin</span>
+          </div>
+        </header>
+
+        <main class="main">
+          <div id="error" class="alert" style="display:none"></div>
+
+          <section id="viewDashboard" class="view">
+            <div class="welcome card">
+              <h2>Welcome, System</h2>
+              <p>Current tax operations period and risk visibility at a glance.</p>
+            </div>
+
+            <div id="kpis" class="kpi-grid"></div>
+
+            <div class="grid three">
+              <article class="card dark-accent">
+                <h3>Operations Clock</h3>
+                <div class="clock-grid">
+                  <div class="clock-box">
+                    <span>Local</span>
+                    <b id="localTime">--:--:--</b>
+                  </div>
+                  <div class="clock-box">
+                    <span>UTC</span>
+                    <b id="utcTime">--:--:--</b>
+                  </div>
+                </div>
+                <button class="action-good" disabled>Operations Active</button>
+                <div class="small muted">Use Clients page to process files, status, and requests.</div>
+              </article>
+
+              <article class="card">
+                <h3>Status Distribution</h3>
+                <div id="statusGraph" class="graph"></div>
+              </article>
+
+              <article class="card">
+                <h3>At-Risk Notices</h3>
+                <div id="riskNotices" class="list"></div>
+              </article>
+            </div>
+
+            <div class="grid two">
+              <article class="card">
+                <h3>Missing Documents Queue</h3>
+                <div id="missingQueue" class="list"></div>
+              </article>
+              <article class="card">
+                <h3>Recent Audit</h3>
+                <div id="audit" class="list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section id="viewClients" class="view" style="display:none">
+            <div id="clientsSelectMode" class="grid two">
+              <article class="card">
+                <h3>Select Client</h3>
+                <p class="small muted">Search to filter the full client listing below.</p>
+                <input id="search" placeholder="Search by client name, status, entity, EIN/SSN" />
+                              </article>
+
+              <article class="card">
+                <h3>Create New Client</h3>
+                <div class="row">
+                  <input id="newFirstName" placeholder="First Name" />
+                  <input id="newLastName" placeholder="Last Name" />
+                </div>
+                <select id="newEntity"><option>1040</option><option>1120</option><option>1120S</option><option>1065</option></select>
+                <input id="newEmail" type="email" placeholder="Client email" />
+                <input id="newStaff" placeholder="Assigned staff" />
+                <button id="createClient" class="primary">Create</button>
+              </article>
+            </div>
+
+            <article id="fullClientListCard" class="card" style="margin-top:10px;">
+              <div class="row">
+                <h3 style="margin:0">All Clients</h3>
+                <div class="small muted">Progressive search + filters below.</div>
+              </div>
+              <div class="row filter-toolbar">
+                <select id="filterStatus" style="width:auto;min-width:170px;"><option value="">All Statuses</option></select>
+                <select id="filterEntity" style="width:auto;min-width:130px;"><option value="">All Entities</option></select>
+                <select id="filterStaff" style="width:auto;min-width:170px;"><option value="">All Staff</option></select>
+                <button id="clearFilters" style="width:auto;">Clear</button>
+              </div>
+              <div class="table-wrap">
+                <table class="client-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th id="sortFirstName" class="sortable" role="button" tabindex="0" aria-label="Sort by first name">First Name</th>
+                      <th id="sortLastName" class="sortable" role="button" tabindex="0" aria-label="Sort by last name">Last Name</th>
+                      <th>Entity</th>
+                      <th>Email</th>
+                      <th>Assigned Staff</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fullClientList"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <div id="clientSelectedHeader" class="card" style="display:none">
+              <div class="row">
+                <div>
+                  <h3 id="selectedClientName" style="margin:0;"></h3>
+                  <div id="selectedClientMeta" class="small muted"></div>
+                </div>
+                <div class="row" style="gap:6px;">
+                  <button id="returnToListBtn" style="width:auto;">Return to Client List</button>
+                  <button id="openPortal" style="width:auto;">Open Portal</button>
+                  <button id="openClientFilesBtn" class="primary" style="width:auto;">Client Visible Files</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="selectedPane" class="grid two" style="display:none">
+              <article class="card">
+                <h3 id="selTitle"></h3>
+                <div id="selInternal" class="small muted"></div>
+                <div class="row" style="margin-top:8px;">
+                  <label class="small muted" style="margin:0;">Status</label>
+                  <select id="statusSelect"></select>
+                </div>
+
+                <h4>File Upload</h4>
+                <select id="uploadTaxYear"></select>
+                <select id="folderSelect"></select>
+                <label class="small muted"><input id="internalOnly" type="checkbox" /> Internal only</label>
+                <input id="fileInput" type="file" />
+
+                <h4>Tax Year Roots</h4>
+                <div class="row">
+                  <select id="addTaxYearSelect" style="margin-top:0;"><option value="">Select year to add</option></select>
+                  <button id="addTaxYearBtn" style="width:auto;">Add Year</button>
+                </div>
+                <div id="taxYearFeedback" class="small muted"></div>
+
+                <h4>Checklist</h4>
+                <div id="checklist"></div>
+              </article>
+
+              <article class="card">
+                <h3>Internal Workflow</h3>
+                <h4>Request Prior-Year Document</h4>
+                <select id="reqYear"></select>
+                <select id="reqDocType">
+                  <option value="Full Return PDF">Full Return PDF</option>
+                  <option value="W-2">W-2</option>
+                  <option value="1099">1099</option>
+                  <option value="K-1">K-1</option>
+                  <option value="Other Supporting Doc">Other Supporting Doc</option>
+                </select>
+                <button id="sendReq" class="primary">Send Request</button>
+                <div id="reqFeedback" class="small muted"></div>
+                <h4>Internal Notes</h4>
+                <textarea id="noteText"></textarea>
+                <button id="saveNote">Save Note</button>
+              </article>
+            </div>
+
+            <div id="clientFilesPage" class="card" style="display:none">
+              <div class="row">
+                <h3 style="margin:0">Client File Manager</h3>
+                <button id="closeClientFilesBtn" style="width:auto;">Back to Client Workspace</button>
+              </div>
+              <div id="fileManagerBreadcrumb" class="small muted" style="margin:8px 0;"></div>
+              <div id="fileManagerFolders" class="list"></div>
+              <div id="fileManagerFiles" class="list"></div>
+            </div>
+          </section>
+
+          <section id="viewNotices" class="view" style="display:none">
+            <article class="card">
+              <h3>Client Performance Notices</h3>
+              <p class="small muted">Clients are automatically scored green/yellow/red for filing risk.</p>
+              <div id="noticeBoard" class="list"></div>
+            </article>
+          </section>
+
+          <section id="viewSettings" class="view" style="display:none">
+            <article class="card">
+              <h3>Settings</h3>
+              <p class="small muted">Configure tax season and estimated-tax deadlines shown in the client portal footer.</p>
+              <label class="small muted">Tax Season Start</label>
+              <input id="taxSeasonStart" type="date" />
+              <label class="small muted">Tax Season End</label>
+              <input id="taxSeasonEnd" type="date" />
+                            <label class="small muted">Q1 Estimate Due</label>
+              <input id="q1EstimateDue" type="date" />
+              <label class="small muted">Q2 Estimate Due</label>
+              <input id="q2EstimateDue" type="date" />
+              <label class="small muted">Q3 Estimate Due</label>
+              <input id="q3EstimateDue" type="date" />
+              <label class="small muted">Q4 Estimate Due</label>
+              <input id="q4EstimateDue" type="date" />
+              <button id="saveSettings" class="primary">Save Settings</button>
+              <div id="settingsFeedback" class="small muted"></div>
+            </article>
+          </section>
+
+        </main>
+      </div>
+    </div>
+
+    <script src="/admin.js"></script>
+  </body>
+</html>
