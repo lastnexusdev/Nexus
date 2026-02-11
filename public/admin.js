@@ -7,6 +7,7 @@ const state = {
   selectedId: null,
   view: 'dashboard',
   pickerQuery: '',
+  fileManagerYear: null,
   fileManagerFolder: null
 };
 
@@ -39,6 +40,13 @@ function setError(msg = '') {
   }
   el.style.display = 'block';
   el.textContent = msg;
+}
+
+function setReqFeedback(msg = '', ok = true) {
+  const el = $('reqFeedback');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = ok ? '#2f7d32' : '#a12e2e';
 }
 
 function setView(view) {
@@ -152,40 +160,91 @@ function renderPicker() {
       await loadSelected();
       state.pickerQuery = '';
       $('search').value = '';
+      state.fileManagerYear = null;
       state.fileManagerFolder = null;
       renderClientsPage();
     };
   });
 }
 
-function filesByFolder(client) {
-  const grouped = new Map();
+function filesByYearAndFolder(client) {
+  const byYear = new Map();
   for (const f of client.files || []) {
     if (f.internalOnly) continue;
-    if (!grouped.has(f.category)) grouped.set(f.category, []);
-    grouped.get(f.category).push(f);
+    const year = String(f.taxYear || new Date().getFullYear());
+    if (!byYear.has(year)) byYear.set(year, new Map());
+    const folders = byYear.get(year);
+    if (!folders.has(f.category)) folders.set(f.category, []);
+    folders.get(f.category).push(f);
   }
-  return grouped;
+  return byYear;
+}
+
+function normalizeFolderName(name) {
+  const n = String(name || 'Misc');
+  if (/w-?2/i.test(n)) return 'Intake/W2';
+  if (/1099/i.test(n)) return 'Intake/1099';
+  if (/k-?1/i.test(n)) return 'Intake/K1';
+  if (/workpaper/i.test(n)) return 'Workpapers';
+  if (/filed/i.test(n)) return 'Filed Returns';
+  return n;
 }
 
 function renderClientFilesPage() {
   if (!state.selected) return;
-  const grouped = filesByFolder(state.selected);
-  const folders = Array.from(grouped.keys()).sort();
+  const byYear = filesByYearAndFolder(state.selected);
+  const templateYears = (state.selected.taxYears || []).map(String);
+  const currentYear = new Date().getFullYear();
+  const yearSet = new Set([...templateYears, String(currentYear), String(currentYear - 1), String(currentYear - 2), ...Array.from(byYear.keys())]);
+  const years = Array.from(yearSet).sort((a, b) => Number(b) - Number(a));
 
-  const crumb = state.fileManagerFolder
-    ? `Client Visible Files / ${state.fileManagerFolder}`
-    : 'Client Visible Files / folders';
+  const crumb = state.fileManagerYear
+    ? (state.fileManagerFolder ? `Client Files / TaxYear${state.fileManagerYear} / ${state.fileManagerFolder}` : `Client Files / TaxYear${state.fileManagerYear}`)
+    : 'Client Files / Tax year roots';
   $('fileManagerBreadcrumb').textContent = crumb;
+
+  if (!state.fileManagerYear) {
+    $('fileManagerFolders').style.display = 'block';
+    $('fileManagerFiles').style.display = 'none';
+    $('fileManagerFolders').innerHTML = years
+      .map((y) => `<button class="folder-btn year-btn" data-year="${esc(y)}">📁 TaxYear${esc(y)}</button>`)
+      .join('') || '<div class="small muted">No tax year roots yet.</div>';
+
+    document.querySelectorAll('.year-btn').forEach((el) => {
+      el.onclick = () => {
+        state.fileManagerYear = el.getAttribute('data-year');
+        state.fileManagerFolder = null;
+        renderClientFilesPage();
+      };
+    });
+    return;
+  }
+
+  const yearFoldersRaw = byYear.get(state.fileManagerYear) || new Map();
+  const rolled = new Map();
+  for (const [folder, files] of yearFoldersRaw.entries()) {
+    const key = normalizeFolderName(folder);
+    if (!rolled.has(key)) rolled.set(key, []);
+    rolled.get(key).push(...files);
+  }
+  const defaultFolders = ['Intake/W2', 'Intake/1099', 'Intake/K1', 'Workpapers', 'Filed Returns', 'Misc'];
+  for (const f of defaultFolders) if (!rolled.has(f)) rolled.set(f, []);
+  const folderNames = Array.from(rolled.keys()).sort();
 
   if (!state.fileManagerFolder) {
     $('fileManagerFolders').style.display = 'block';
     $('fileManagerFiles').style.display = 'none';
-    $('fileManagerFolders').innerHTML = folders.length
-      ? folders.map((folder) => `<button class="folder-btn" data-folder="${esc(folder)}">📁 ${esc(folder)} (${grouped.get(folder).length})</button>`).join('')
-      : '<div class="small muted">No client-visible files found.</div>';
+    $('fileManagerFolders').innerHTML = `
+      <button id="backToYearRootsBtn" style="width:auto;margin-bottom:8px;">← Back to tax year roots</button>
+      ${folderNames.map((folder) => `<button class="folder-btn" data-folder="${esc(folder)}">📁 ${esc(folder)} (${rolled.get(folder).length})</button>`).join('')}
+    `;
 
-    document.querySelectorAll('.folder-btn').forEach((el) => {
+    $('backToYearRootsBtn').onclick = () => {
+      state.fileManagerYear = null;
+      renderClientFilesPage();
+    };
+
+    document.querySelectorAll('.folder-btn[data-folder]').forEach((el) => {
       el.onclick = () => {
         state.fileManagerFolder = el.getAttribute('data-folder');
         renderClientFilesPage();
@@ -194,15 +253,15 @@ function renderClientFilesPage() {
     return;
   }
 
-  const files = grouped.get(state.fileManagerFolder) || [];
+  const files = rolled.get(state.fileManagerFolder) || [];
   $('fileManagerFolders').style.display = 'none';
   $('fileManagerFiles').style.display = 'block';
   $('fileManagerFiles').innerHTML = `
-    <button id="backToFoldersBtn" style="width:auto;margin-bottom:8px;">← Back to folders</button>
-    ${files.map((f) => `<div class="file-row"><div><b>${esc(f.originalName)}</b><div class="small muted">v${esc(f.version)} • ${esc(f.source)} • ${esc(f.uploadedAt || '')}</div></div><button class="viewFileBtn" data-id="${esc(f.id)}" style="width:auto;">View</button></div>`).join('')}
+    <button id="backToYearFoldersBtn" style="width:auto;margin-bottom:8px;">← Back to folders</button>
+    ${files.length ? files.map((f) => `<div class="file-row"><div><b>${esc(f.originalName)}</b><div class="small muted">TaxYear${esc(f.taxYear || state.fileManagerYear)} • v${esc(f.version)} • ${esc(f.source)} • ${esc(f.uploadedAt || '')}</div></div><button class="viewFileBtn" data-id="${esc(f.id)}" style="width:auto;">View</button></div>`).join('') : '<div class="small muted">No files in this folder yet.</div>'}
   `;
 
-  $('backToFoldersBtn').onclick = () => {
+  $('backToYearFoldersBtn').onclick = () => {
     state.fileManagerFolder = null;
     renderClientFilesPage();
   };
@@ -245,7 +304,10 @@ function renderClientsPage() {
   $('selInternal').textContent = `Internal ID: ${state.selected.clientInternalId}`;
   $('statusSelect').innerHTML = state.meta.statuses.map((s) => `<option ${s === state.selected.status ? 'selected' : ''}>${esc(s)}</option>`).join('');
   $('folderSelect').innerHTML = state.meta.folders.map((f) => `<option>${esc(f)}</option>`).join('');
+  const yset = new Set([...(state.selected.taxYears || []).map(String), String(new Date().getFullYear()), String(new Date().getFullYear() - 1), String(new Date().getFullYear() - 2)]);
+  $('uploadTaxYear').innerHTML = Array.from(yset).sort((a,b)=>Number(b)-Number(a)).map((y) => `<option>${esc(y)}</option>`).join('');
   $('checklist').innerHTML = (state.selected.checklist || []).map((i) => `<div class="row"><span>${esc(i.doc)}</span><b>${i.found ? '✓' : 'Missing'}</b></div>`).join('');
+  setReqFeedback('');
 
   if ($('clientFilesPage').style.display === 'block') {
     renderClientFilesPage();
@@ -294,6 +356,7 @@ async function uploadFile(file, source = 'upload') {
       base64,
       originalName: file.name,
       category: $('folderSelect').value,
+      taxYear: $('uploadTaxYear').value,
       internalOnly: $('internalOnly').checked,
       source
     })
@@ -318,7 +381,6 @@ $('createClient').onclick = async () => {
       body: JSON.stringify({
         name: $('newName').value.trim(),
         entityType: $('newEntity').value,
-        taxYears: $('newYears').value.split(',').map((s) => s.trim()).filter(Boolean),
         assignedStaff: $('newStaff').value.trim()
       })
     });
@@ -354,14 +416,20 @@ $('fileInput').onchange = async (e) => {
 
 $('sendReq').onclick = async () => {
   try {
+    const text = $('reqText').value.trim();
+    if (!text) return setReqFeedback('Request text is required.', false);
+    $('sendReq').disabled = true;
     await jfetch(`/api/admin/clients/${state.selectedId}/requests`, {
       method: 'POST',
       headers: HEADERS,
-      body: JSON.stringify({ text: $('reqText').value, priority: 'high' })
+      body: JSON.stringify({ text, priority: 'high' })
     });
+    setReqFeedback('Request submitted successfully.');
     await refresh();
   } catch (e) {
-    setError(e.message);
+    setReqFeedback(e.message, false);
+  } finally {
+    $('sendReq').disabled = false;
   }
 };
 
@@ -387,6 +455,7 @@ $('openPortal').onclick = () => {
 $('returnToListBtn').onclick = () => {
   state.selected = null;
   state.selectedId = null;
+  state.fileManagerYear = null;
   state.fileManagerFolder = null;
   $('clientFilesPage').style.display = 'none';
   renderClientsPage();
@@ -394,6 +463,7 @@ $('returnToListBtn').onclick = () => {
 
 $('openClientFilesBtn').onclick = () => {
   if (!state.selected) return;
+  state.fileManagerYear = null;
   state.fileManagerFolder = null;
   $('clientFilesPage').style.display = 'block';
   renderClientFilesPage();

@@ -103,8 +103,7 @@
                 <h3>Create New Client</h3>
                 <input id="newName" placeholder="Name" />
                 <select id="newEntity"><option>1040</option><option>1120</option><option>1120S</option><option>1065</option></select>
-                <input id="newYears" placeholder="Tax years csv" value="2026" />
-                <input id="newStaff" placeholder="Assigned staff" />
+                                <input id="newStaff" placeholder="Assigned staff" />
                 <button id="createClient" class="primary">Create</button>
               </article>
             </div>
@@ -133,6 +132,7 @@
                 </div>
 
                 <h4>File Upload</h4>
+                <select id="uploadTaxYear"></select>
                 <select id="folderSelect"></select>
                 <label class="small muted"><input id="internalOnly" type="checkbox" /> Internal only</label>
                 <input id="fileInput" type="file" />
@@ -146,6 +146,7 @@
                 <h4>Request docs</h4>
                 <textarea id="reqText">Please upload missing documents.</textarea>
                 <button id="sendReq" class="primary">Send Request</button>
+                <div id="reqFeedback" class="small muted"></div>
                 <h4>Internal Notes</h4>
                 <textarea id="noteText"></textarea>
                 <button id="saveNote">Save Note</button>

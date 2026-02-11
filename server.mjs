@@ -51,7 +51,7 @@ function normalizeDbShape(db) {
     if (!Array.isArray(client.notes)) client.notes = [];
     if (!Array.isArray(client.docRequests)) client.docRequests = [];
     if (!Array.isArray(client.events)) client.events = [];
-    if (!Array.isArray(client.taxYears)) client.taxYears = [String(new Date().getFullYear())];
+    if (!Array.isArray(client.taxYears)) client.taxYears = [];
     if (!client.status) client.status = 'Intake Received';
     if (!client.entityType) client.entityType = '1040';
     if (!client.portalCode) client.portalCode = `portal-${Math.random().toString(36).slice(2, 8)}`;
@@ -170,7 +170,7 @@ function routeApi(req, res) {
         name: p.name || '',
         businessName: p.businessName || '',
         entityType: p.entityType || '1040',
-        taxYears: p.taxYears || [String(new Date().getFullYear())],
+        taxYears: Array.isArray(p.taxYears) ? p.taxYears.map(String) : [],
         status: p.status || 'Intake Received',
         assignedStaff: p.assignedStaff || '',
         identifiers: p.identifiers || [],
@@ -225,6 +225,7 @@ function routeApi(req, res) {
         internalOnly: !!p.internalOnly,
         taxYear: p.taxYear || String(new Date().getFullYear())
       };
+      if (!client.taxYears.includes(String(file.taxYear))) client.taxYears.push(String(file.taxYear));
       client.files.unshift(file);
       client.events.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), message: `${file.source} ${originalName} -> ${folder} v${version}`, by: a.user });
       client.updatedAt = new Date().toISOString();
@@ -325,7 +326,8 @@ function routeApi(req, res) {
       const version = client.files.filter((f) => f.category === folder && f.originalName === originalName).length + 1;
       const storedName = `${stamp}__${originalName}`;
       writeBase64File(client.id, folder, storedName, p.base64);
-      const file = { id: crypto.randomUUID(), originalName, storedName, category: folder, version, uploadedAt: new Date().toISOString(), uploadedBy: 'Client', source: p.source || 'client-upload', internalOnly: false };
+      const file = { id: crypto.randomUUID(), originalName, storedName, category: folder, version, uploadedAt: new Date().toISOString(), uploadedBy: 'Client', source: p.source || 'client-upload', internalOnly: false, taxYear: p.taxYear || String(new Date().getFullYear()) };
+      if (!client.taxYears.includes(String(file.taxYear))) client.taxYears.push(String(file.taxYear));
       client.files.unshift(file);
       client.events.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), message: `Client uploaded ${originalName}`, by: 'Client' });
       client.updatedAt = new Date().toISOString();
