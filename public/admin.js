@@ -407,7 +407,7 @@ function renderFullClientList() {
   $('fullClientList').innerHTML = rows.length
     ? rows.map((c) => {
       const parts = clientNameParts(c);
-      return `<tr class="${clientRowTone(c)}">
+      return `<tr class="${clientRowTone(c)}" data-client-id="${esc(c.id)}" style="cursor:pointer">
         <td><span class="status-chip ${statusChipClass(c.status)}">${esc(c.status)}</span></td>
         <td>${esc(parts.firstName || '-')}</td>
         <td>${esc(parts.lastName || '-')}</td>
@@ -455,6 +455,17 @@ function renderFullClientList() {
       } catch (e) {
         setError(e.message);
       }
+    };
+  });
+
+  // Double-click row to open client
+  $('fullClientList').querySelectorAll('tr[data-client-id]').forEach((row) => {
+    row.ondblclick = async () => {
+      state.selectedId = row.dataset.clientId;
+      await loadSelected();
+      state.fileManagerYear = null;
+      state.fileManagerFolder = null;
+      renderClientsPage();
     };
   });
 }
