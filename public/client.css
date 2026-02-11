@@ -153,9 +153,9 @@ button.primary {
   cursor: pointer;
 }
 
-.list { max-height: 280px; overflow: auto; margin-top: 8px; }
+.list { max-height: none; overflow: visible; margin-top: 8px; }
 .list.no-scroll { max-height: none; overflow: visible; }
-.mini-list { max-height: 120px; }
+.mini-list { max-height: none; overflow: visible; }
 .file {
   display: flex;
   justify-content: space-between;
