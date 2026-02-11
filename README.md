@@ -96,6 +96,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Client portal request uploads are now year-focused for prior-year return workflows, and quick upload is simplified to full-return uploads by tax year.
 - Added status distribution graph bars and at-risk client notices.
 - Added dedicated Clients and Notices pages in left navigation for cleaner workflow separation.
+- Clients page now shows a full **All Clients** listing table while preserving progressive search filtering for quick narrowing.
 
 
 ## Admin UI Theme

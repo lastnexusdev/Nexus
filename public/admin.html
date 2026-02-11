@@ -99,7 +99,7 @@
             <div id="clientsSelectMode" class="grid two">
               <article class="card">
                 <h3>Select Client</h3>
-                <p class="small muted">Step 1: search and select one client. The full directory is hidden until you search.</p>
+                <p class="small muted">Search to narrow results, or use the full client listing below.</p>
                 <input id="search" placeholder="Search by client name, status, entity, EIN/SSN" />
                 <div id="pickerResults" class="list compact"></div>
               </article>
@@ -112,6 +112,28 @@
                 <button id="createClient" class="primary">Create</button>
               </article>
             </div>
+
+            <article id="fullClientListCard" class="card" style="margin-top:10px;">
+              <div class="row">
+                <h3 style="margin:0">All Clients</h3>
+                <div class="small muted">Progressive search above filters this list in real time.</div>
+              </div>
+              <div class="table-wrap">
+                <table class="client-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Entity</th>
+                      <th>Status</th>
+                      <th>Assigned Staff</th>
+                      <th>Years</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fullClientList"></tbody>
+                </table>
+              </div>
+            </article>
 
             <div id="clientSelectedHeader" class="card" style="display:none">
               <div class="row">

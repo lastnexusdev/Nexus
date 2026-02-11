@@ -225,6 +225,36 @@ function renderPicker() {
       renderClientsPage();
     };
   });
+
+  renderFullClientList();
+}
+
+function renderFullClientList() {
+  const q = state.pickerQuery.trim().toLowerCase();
+  const rows = (q ? filteredClients() : state.clients)
+    .slice()
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+
+  $('fullClientList').innerHTML = rows.length
+    ? rows.map((c) => `<tr>
+        <td><b>${esc(c.name)}</b></td>
+        <td>${esc(c.entityType)}</td>
+        <td><span class="status-chip">${esc(c.status)}</span></td>
+        <td>${esc(c.assignedStaff || 'Unassigned')}</td>
+        <td>${esc((c.taxYears || []).join(', ') || '-')}</td>
+        <td><button class="selectClientRowBtn" data-id="${esc(c.id)}" style="width:auto;">Open</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" class="small muted">No clients match the current search.</td></tr>';
+
+  document.querySelectorAll('.selectClientRowBtn').forEach((el) => {
+    el.onclick = async () => {
+      state.selectedId = el.getAttribute('data-id');
+      await loadSelected();
+      state.fileManagerYear = null;
+      state.fileManagerFolder = null;
+      renderClientsPage();
+    };
+  });
 }
 
 function filesByYearAndFolder(client) {
@@ -351,6 +381,7 @@ function renderClientsPage() {
 
   const hasSelected = Boolean(state.selected);
   $('clientsSelectMode').style.display = hasSelected ? 'none' : 'grid';
+  $('fullClientListCard').style.display = hasSelected ? 'none' : 'block';
   $('clientSelectedHeader').style.display = hasSelected ? 'block' : 'none';
   $('selectedPane').style.display = hasSelected ? 'grid' : 'none';
 
