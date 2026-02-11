@@ -273,6 +273,17 @@ function routeApi(req, res) {
     return send(res, 200, { ...client, checklist: computeChecklist(client) });
   }
 
+  const adminClientDel = url.pathname.match(/^\/api\/admin\/clients\/([^/]+)$/);
+  if (adminClientDel && req.method === 'DELETE') {
+    if (a.role !== 'Admin') return send(res, 403, { error: 'Forbidden' });
+    const idx = db.clients.findIndex((c) => c.id === adminClientDel[1]);
+    if (idx === -1) return send(res, 404, { error: 'Client not found' });
+    db.clients.splice(idx, 1);
+    addAudit(db, { actor: a.user, role: a.role, action: 'DELETE_CLIENT', clientId: adminClientDel[1] });
+    saveDb(db);
+    return send(res, 200, { ok: true });
+  }
+
   const adminUpload = url.pathname.match(/^\/api\/admin\/clients\/([^/]+)\/upload$/);
   if (adminUpload && req.method === 'POST') {
     if (!['Admin', 'Preparer'].includes(a.role)) return send(res, 403, { error: 'Forbidden' });

@@ -97,28 +97,28 @@
 
           <section id="viewClients" class="view" style="display:none">
             <div id="clientsSelectMode">
+              <!-- Status filter tabs with counts -->
+              <div class="dt-status-tabs" id="statusTabs"></div>
+
+              <!-- Dark toolbar: Add button left, filter + search right -->
               <div class="dt-toolbar">
                 <div class="dt-toolbar-left">
-                  <div class="dt-search-wrap">
-                    <svg class="dt-search-icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-                    <input id="search" class="dt-search" placeholder="Search clients..." />
-                  </div>
-                  <div class="dt-filter-group">
-                    <select id="filterStatus" class="dt-filter"><option value="">All Statuses</option></select>
-                    <select id="filterStaff" class="dt-filter"><option value="">All Tax Pros</option></select>
-                  </div>
-                  <button id="clearFilters" class="dt-clear-btn">Clear</button>
+                  <button id="addClientBtn" class="dt-add-btn">+ Add</button>
                 </div>
                 <div class="dt-toolbar-right">
-                  <button id="addClientBtn" class="primary dt-add-btn">+ Add Client</button>
+                  <select id="filterStaff" class="dt-toolbar-filter"><option value="">Filter by Tax Pro</option></select>
+                  <select id="filterEntity" class="dt-toolbar-filter"><option value="">Filter by Entity</option></select>
+                  <div class="dt-search-wrap">
+                    <input id="search" class="dt-search" placeholder="Search..." />
+                  </div>
                 </div>
               </div>
 
-              <div class="dt-count-bar">
-                <span id="clientCount" class="dt-count">0 clients</span>
-                <select id="filterEntity" class="dt-filter dt-entity-filter"><option value="">All Entities</option></select>
-              </div>
+              <!-- Hidden select for status filter (driven by tabs) -->
+              <select id="filterStatus" style="display:none"><option value="">All Statuses</option></select>
+              <button id="clearFilters" style="display:none">Clear</button>
 
+              <!-- Table -->
               <div class="dt-table-wrap">
                 <table class="dt-table">
                   <thead>
@@ -126,20 +126,21 @@
                       <th class="dt-sortable" data-col="status" role="button" tabindex="0">Status</th>
                       <th class="dt-sortable" data-col="firstName" role="button" tabindex="0">First Name</th>
                       <th class="dt-sortable" data-col="lastName" role="button" tabindex="0">Last Name</th>
-                      <th class="dt-sortable" data-col="entityType" role="button" tabindex="0">Entity</th>
                       <th class="dt-sortable" data-col="email" role="button" tabindex="0">Email</th>
                       <th class="dt-sortable" data-col="assignedStaff" role="button" tabindex="0">Tax Pro</th>
-                      <th class="dt-sortable" data-col="updatedAt" role="button" tabindex="0">Last Updated</th>
-                      <th class="dt-action-col">Action</th>
+                      <th class="dt-sortable" data-col="entityType" role="button" tabindex="0">Account</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="fullClientList"></tbody>
                 </table>
               </div>
 
+              <!-- Pagination -->
               <div class="dt-pagination" id="pagination"></div>
             </div>
 
+            <!-- Add Client Modal -->
             <div id="addClientModal" class="modal-overlay" style="display:none">
               <div class="modal-box">
                 <div class="modal-header">

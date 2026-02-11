@@ -365,14 +365,38 @@ function renderPagination(totalRows) {
   });
 }
 
+function renderStatusTabs() {
+  const tabEl = $('statusTabs');
+  if (!tabEl) return;
+  const allClients = state.clients || [];
+  const counts = {};
+  for (const c of allClients) {
+    counts[c.status] = (counts[c.status] || 0) + 1;
+  }
+  const statuses = Array.from(new Set(allClients.map((c) => c.status).filter(Boolean))).sort();
+  const currentFilter = state.filters.status;
+
+  let html = `<button class="dt-tab ${!currentFilter ? 'active' : ''}" data-status="">All <span class="dt-tab-count">${allClients.length}</span></button>`;
+  for (const s of statuses) {
+    html += `<button class="dt-tab ${currentFilter === s ? 'active' : ''}" data-status="${esc(s)}">${esc(s)} <span class="dt-tab-count">${counts[s] || 0}</span></button>`;
+  }
+  tabEl.innerHTML = html;
+
+  tabEl.querySelectorAll('.dt-tab').forEach((btn) => {
+    btn.onclick = () => {
+      state.filters.status = btn.dataset.status;
+      state.page = 1;
+      if ($('filterStatus')) $('filterStatus').value = btn.dataset.status;
+      renderClientsPage();
+    };
+  });
+}
+
 function renderFullClientList() {
   populateClientFilters();
+  renderStatusTabs();
   const sorted = sortClients(filteredClients());
   const totalRows = sorted.length;
-
-  // Update count
-  const countEl = $('clientCount');
-  if (countEl) countEl.textContent = `${totalRows} client${totalRows !== 1 ? 's' : ''}`;
 
   // Paginate
   const totalPages = Math.max(1, Math.ceil(totalRows / state.pageSize));
@@ -385,16 +409,15 @@ function renderFullClientList() {
       const parts = clientNameParts(c);
       return `<tr class="${clientRowTone(c)}">
         <td><span class="status-chip ${statusChipClass(c.status)}">${esc(c.status)}</span></td>
-        <td><b>${esc(parts.firstName || '-')}</b></td>
+        <td>${esc(parts.firstName || '-')}</td>
         <td>${esc(parts.lastName || '-')}</td>
-        <td>${esc(c.entityType)}</td>
         <td>${esc(c.email || '-')}</td>
         <td>${esc(c.assignedStaff || 'Unassigned')}</td>
-        <td>${esc(formatDate(c.updatedAt || c.createdAt))}</td>
-        <td class="dt-action-col"><button class="dt-open-btn selectClientRowBtn" data-id="${esc(c.id)}">Open</button></td>
+        <td>${esc(c.entityType)}</td>
+        <td class="dt-actions-cell"><div class="dt-actions"><button class="dt-act-btn dt-act-edit selectClientRowBtn" data-id="${esc(c.id)}">Edit</button><button class="dt-act-btn dt-act-del deleteClientBtn" data-id="${esc(c.id)}">Delete</button></div></td>
       </tr>`;
     }).join('')
-    : '<tr><td colspan="8" class="small muted" style="text-align:center;padding:28px;">No clients match the current filters.</td></tr>';
+    : '<tr><td colspan="7" class="small muted" style="text-align:center;padding:28px;">No clients match the current filters.</td></tr>';
 
   // Update sort header indicators
   document.querySelectorAll('.dt-sortable').forEach((th) => {
@@ -404,7 +427,7 @@ function renderFullClientList() {
   // Pagination
   renderPagination(totalRows);
 
-  // Row click handlers
+  // Edit button handlers
   document.querySelectorAll('.selectClientRowBtn').forEach((el) => {
     el.onclick = async () => {
       state.selectedId = el.getAttribute('data-id');
@@ -412,6 +435,26 @@ function renderFullClientList() {
       state.fileManagerYear = null;
       state.fileManagerFolder = null;
       renderClientsPage();
+    };
+  });
+
+  // Delete button handlers
+  document.querySelectorAll('.deleteClientBtn').forEach((el) => {
+    el.onclick = async () => {
+      const id = el.getAttribute('data-id');
+      const client = state.clients.find((c) => c.id === id);
+      const name = client ? clientDisplayName(client) : 'this client';
+      if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+      try {
+        await jfetch(`/api/admin/clients/${id}`, { method: 'DELETE', headers: HEADERS });
+        if (state.selectedId === id) {
+          state.selected = null;
+          state.selectedId = null;
+        }
+        await refresh();
+      } catch (e) {
+        setError(e.message);
+      }
     };
   });
 }
@@ -646,12 +689,6 @@ $('search').addEventListener('input', (e) => {
   state.page = 1;
   renderClientsPage();
 });
-
-$('filterStatus').onchange = (e) => {
-  state.filters.status = e.target.value;
-  state.page = 1;
-  renderClientsPage();
-};
 
 $('filterEntity').onchange = (e) => {
   state.filters.entity = e.target.value;
