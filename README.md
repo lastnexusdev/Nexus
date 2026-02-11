@@ -121,6 +121,8 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Client portal now includes separated sections for **Overview**, **Requests**, and **File Manager** to reduce clutter and guide clients through tasks.
 - Added an action popup for pending document requests immediately after sign-in, with a direct upload control on each request card.
 - Added folder-first file manager navigation for clients (folders → files → view).
+- Added explicit client-side upload controls with **Upload** and **Cancel** actions (no forced instant upload).
+- Request popup can now be dismissed cleanly, and request uploads now mark the request complete so completed uploads stop reappearing as pending.
 
 
 ## File Viewing

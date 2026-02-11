@@ -1,4 +1,4 @@
-const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null };
+const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false };
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -27,6 +27,10 @@ function applyTheme(theme) {
 }
 
 function setError(msg = '') { $('error').textContent = msg; }
+
+function setUploadNotice(msg = '') {
+  $('clientUploadNotice').textContent = msg;
+}
 
 function setView(view) {
   state.view = view;
@@ -77,36 +81,59 @@ function uploadInputHtml(requestId = '') {
         <option>Misc</option>
       </select>
       <input class="requestFile" data-request-id="${esc(requestId)}" type="file" style="width:auto;" />
+      <button class="requestUploadBtn primary" data-request-id="${esc(requestId)}" style="width:auto;">Upload</button>
+      <button class="requestCancelBtn" data-request-id="${esc(requestId)}" style="width:auto;">Cancel</button>
     </div>
+    <div class="small muted requestUploadNotice" data-request-id="${esc(requestId)}"></div>
   `;
 }
 
+function requestNotice(reqId, text) {
+  const el = document.querySelector(`.requestUploadNotice[data-request-id="${CSS.escape(reqId)}"]`);
+  if (el) el.textContent = text;
+}
+
 function bindRequestUploadInputs() {
-  document.querySelectorAll('.requestFile').forEach((el) => {
-    el.onchange = async () => {
+  document.querySelectorAll('.requestUploadBtn').forEach((el) => {
+    el.onclick = async () => {
       const reqId = el.getAttribute('data-request-id') || '';
+      const input = document.querySelector(`.requestFile[data-request-id="${CSS.escape(reqId)}"]`);
       const folder = document.querySelector(`.requestFolder[data-request-id="${CSS.escape(reqId)}"]`);
-      await upload(el.files[0], 'request-upload', folder?.value || 'Intake');
-      el.value = '';
+      if (!input?.files?.[0]) return requestNotice(reqId, 'Select a file first.');
+      requestNotice(reqId, 'Uploading...');
+      await upload(input.files[0], 'request-upload', folder?.value || 'Intake');
+      input.value = '';
       if (reqId) {
-        await markRequestComplete(reqId);
+        const ok = await markRequestComplete(reqId);
+        if (!ok) requestNotice(reqId, 'Uploaded, but request still open.');
       }
+      await signIn();
+    };
+  });
+
+  document.querySelectorAll('.requestCancelBtn').forEach((el) => {
+    el.onclick = () => {
+      const reqId = el.getAttribute('data-request-id') || '';
+      const input = document.querySelector(`.requestFile[data-request-id="${CSS.escape(reqId)}"]`);
+      if (input) input.value = '';
+      requestNotice(reqId, 'Upload canceled.');
     };
   });
 }
 
 async function markRequestComplete(id) {
-  if (!state.session) return;
+  if (!state.session) return false;
   try {
     const req = (state.session.requests || []).find((r) => r.id === id);
-    if (!req) return;
+    if (!req) return false;
     await jfetch(`/api/client/${state.session.id}/requests/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ portalCode: state.portalCode, completed: true, text: req.text, priority: req.priority })
+      body: JSON.stringify({ portalCode: state.portalCode, completed: true })
     });
+    return true;
   } catch {
-    // non-fatal fallback if endpoint is unavailable
+    return false;
   }
 }
 
@@ -156,7 +183,7 @@ function renderFileManager() {
 }
 
 function maybeShowRequestPopup() {
-  if (!state.session) return;
+  if (!state.session || state.popupDismissed) return;
   const pending = (state.session.requests || []).filter((r) => !r.completed);
   if (!pending.length) {
     $('requestPopup').style.display = 'none';
@@ -176,6 +203,7 @@ function render() {
   renderSummary();
   if (!state.session) {
     $('sessionPane').style.display = 'none';
+    $('requestPopup').style.display = 'none';
     return;
   }
 
@@ -230,6 +258,7 @@ async function signIn() {
     state.portalCode = $('portalCode').value.trim();
     if (!state.portalCode) return setError('Enter a portal code.');
     state.session = await jfetch(`/api/client/session?portalCode=${encodeURIComponent(state.portalCode)}`);
+    state.popupDismissed = false;
     render();
   } catch (e) {
     setError(e.message);
@@ -253,23 +282,35 @@ async function upload(file, source = 'client-upload', category = null) {
         source
       })
     });
-    await signIn();
   } catch (e) {
     setError(e.message);
+    throw e;
   }
 }
 
 $('themeToggle').onclick = () => applyTheme(state.theme === 'dark' ? 'light' : 'dark');
 $('signIn').onclick = signIn;
-$('clientFile').onchange = async (e) => {
-  await upload(e.target.files[0], 'client-upload');
-  e.target.value = '';
+$('clientUploadBtn').onclick = async () => {
+  const file = $('clientFile').files?.[0];
+  if (!file) return setUploadNotice('Select a file first.');
+  setUploadNotice('Uploading...');
+  await upload(file, 'client-upload');
+  $('clientFile').value = '';
+  setUploadNotice('Upload complete.');
+  await signIn();
+};
+$('clientUploadCancelBtn').onclick = () => {
+  $('clientFile').value = '';
+  setUploadNotice('Upload canceled.');
 };
 
 $('navClientDashboard').onclick = () => setView('overview');
 $('navClientRequests').onclick = () => setView('requests');
 $('navClientFiles').onclick = () => setView('files');
-$('closePopup').onclick = () => { $('requestPopup').style.display = 'none'; };
+$('closePopup').onclick = () => {
+  state.popupDismissed = true;
+  $('requestPopup').style.display = 'none';
+};
 $('backToClientFolders').onclick = () => {
   state.fileFolder = null;
   renderFileManager();

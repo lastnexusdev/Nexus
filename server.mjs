@@ -295,6 +295,24 @@ function routeApi(req, res) {
     });
   }
 
+  const clientReqPatch = url.pathname.match(/^\/api\/client\/([^/]+)\/requests\/([^/]+)$/);
+  if (clientReqPatch && req.method === 'PATCH') {
+    return parseBody(req).then((p) => {
+      const client = db.clients.find((c) => c.id === clientReqPatch[1]);
+      if (!client) return send(res, 404, { error: 'Client not found' });
+      if (p.portalCode !== client.portalCode) return send(res, 403, { error: 'Bad portal code' });
+      const reqItem = (client.docRequests || []).find((r) => r.id === clientReqPatch[2]);
+      if (!reqItem) return send(res, 404, { error: 'Request not found' });
+      if (typeof p.completed === 'boolean') reqItem.completed = p.completed;
+      reqItem.updatedAt = new Date().toISOString();
+      client.updatedAt = new Date().toISOString();
+      client.events.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), message: `Client request status updated: ${reqItem.text}`, by: 'Client' });
+      addAudit(db, { actor: 'Client', role: 'Client', action: 'CLIENT_REQUEST_UPDATE', clientId: client.id, detail: `${reqItem.id}:${reqItem.completed}` });
+      saveDb(db);
+      send(res, 200, reqItem);
+    }).catch((e) => send(res, 400, { error: e.message }));
+  }
+
   const clientUpload = url.pathname.match(/^\/api\/client\/([^/]+)\/upload$/);
   if (clientUpload && req.method === 'POST') {
     return parseBody(req).then((p) => {
