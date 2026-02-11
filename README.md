@@ -118,6 +118,10 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Added a compact client summary panel (status, tax years, open requests, uploaded files).
 - Preserved secure portal-code sign-in and upload-only file manager behavior.
 
+- Client portal now includes separated sections for **Overview**, **Requests**, and **File Manager** to reduce clutter and guide clients through tasks.
+- Added an action popup for pending document requests immediately after sign-in, with a direct upload control on each request card.
+- Added folder-first file manager navigation for clients (folders → files → view).
+
 
 ## File Viewing
 

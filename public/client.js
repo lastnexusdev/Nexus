@@ -1,4 +1,4 @@
-const state = { session: null, portalCode: '', theme: 'light' };
+const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null };
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -28,6 +28,29 @@ function applyTheme(theme) {
 
 function setError(msg = '') { $('error').textContent = msg; }
 
+function setView(view) {
+  state.view = view;
+  $('clientViewDashboard').style.display = view === 'overview' ? 'block' : 'none';
+  $('clientViewRequests').style.display = view === 'requests' ? 'block' : 'none';
+  $('clientViewFiles').style.display = view === 'files' ? 'block' : 'none';
+
+  ['navClientDashboard', 'navClientRequests', 'navClientFiles'].forEach((id) => $(id).classList.remove('active'));
+  if (view === 'overview') $('navClientDashboard').classList.add('active');
+  if (view === 'requests') $('navClientRequests').classList.add('active');
+  if (view === 'files') $('navClientFiles').classList.add('active');
+
+  if (view === 'files') renderFileManager();
+}
+
+function filesByFolder(files = []) {
+  const grouped = new Map();
+  for (const f of files) {
+    if (!grouped.has(f.category)) grouped.set(f.category, []);
+    grouped.get(f.category).push(f);
+  }
+  return grouped;
+}
+
 function renderSummary() {
   if (!state.session) {
     $('summary').textContent = 'Sign in to load your dashboard.';
@@ -43,6 +66,112 @@ function renderSummary() {
   $('fileMetric').textContent = (state.session.files || []).length;
 }
 
+function uploadInputHtml(requestId = '') {
+  return `
+    <div class="row" style="margin-top:8px; align-items:flex-end;">
+      <select class="requestFolder" data-request-id="${esc(requestId)}" style="width:auto;min-width:220px;">
+        <option>Intake</option>
+        <option>Current Year/W2s</option>
+        <option>Current Year/1099s</option>
+        <option>Current Year/K-1s</option>
+        <option>Misc</option>
+      </select>
+      <input class="requestFile" data-request-id="${esc(requestId)}" type="file" style="width:auto;" />
+    </div>
+  `;
+}
+
+function bindRequestUploadInputs() {
+  document.querySelectorAll('.requestFile').forEach((el) => {
+    el.onchange = async () => {
+      const reqId = el.getAttribute('data-request-id') || '';
+      const folder = document.querySelector(`.requestFolder[data-request-id="${CSS.escape(reqId)}"]`);
+      await upload(el.files[0], 'request-upload', folder?.value || 'Intake');
+      el.value = '';
+      if (reqId) {
+        await markRequestComplete(reqId);
+      }
+    };
+  });
+}
+
+async function markRequestComplete(id) {
+  if (!state.session) return;
+  try {
+    const req = (state.session.requests || []).find((r) => r.id === id);
+    if (!req) return;
+    await jfetch(`/api/client/${state.session.id}/requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portalCode: state.portalCode, completed: true, text: req.text, priority: req.priority })
+    });
+  } catch {
+    // non-fatal fallback if endpoint is unavailable
+  }
+}
+
+function renderFileManager() {
+  if (!state.session) return;
+  const grouped = filesByFolder(state.session.files || []);
+  const folders = Array.from(grouped.keys()).sort();
+
+  $('clientFilesBreadcrumb').textContent = state.fileFolder
+    ? `My Files / ${state.fileFolder}`
+    : 'My Files / folders';
+
+  if (!state.fileFolder) {
+    $('clientFolders').style.display = 'block';
+    $('clientFiles').style.display = 'none';
+    $('backToClientFolders').style.display = 'none';
+
+    $('clientFolders').innerHTML = folders.length
+      ? folders.map((folder) => `<button class="folder-btn" data-folder="${esc(folder)}">📁 ${esc(folder)} (${grouped.get(folder).length})</button>`).join('')
+      : '<div class="muted">No files uploaded yet.</div>';
+
+    document.querySelectorAll('.folder-btn').forEach((el) => {
+      el.onclick = () => {
+        state.fileFolder = el.getAttribute('data-folder');
+        renderFileManager();
+      };
+    });
+    return;
+  }
+
+  $('clientFolders').style.display = 'none';
+  $('clientFiles').style.display = 'block';
+  $('backToClientFolders').style.display = 'inline-block';
+
+  const files = grouped.get(state.fileFolder) || [];
+  $('clientFiles').innerHTML = files.length
+    ? files.map((f) => `<div class="file"><div><b>${esc(f.originalName)}</b><div class="muted small">v${esc(f.version)} • ${esc(f.uploadedAt || '')}</div></div><button class="viewPortalFileBtn" data-id="${esc(f.id)}" style="width:auto;">View</button></div>`).join('')
+    : '<div class="muted">No files in this folder.</div>';
+
+  document.querySelectorAll('.viewPortalFileBtn').forEach((el) => {
+    el.onclick = () => {
+      const id = el.getAttribute('data-id');
+      const u = `/api/files/${encodeURIComponent(state.session.id)}/${encodeURIComponent(id)}?portalCode=${encodeURIComponent(state.portalCode)}`;
+      window.open(u, '_blank', 'noopener');
+    };
+  });
+}
+
+function maybeShowRequestPopup() {
+  if (!state.session) return;
+  const pending = (state.session.requests || []).filter((r) => !r.completed);
+  if (!pending.length) {
+    $('requestPopup').style.display = 'none';
+    return;
+  }
+
+  $('popupRequests').innerHTML = pending
+    .slice(0, 6)
+    .map((r) => `<div class="request-card"><div class="row"><b>${esc(r.text)}</b><span class="pill">${esc(r.priority || 'normal')}</span></div>${uploadInputHtml(r.id)}</div>`)
+    .join('');
+
+  $('requestPopup').style.display = 'grid';
+  bindRequestUploadInputs();
+}
+
 function render() {
   renderSummary();
   if (!state.session) {
@@ -55,18 +184,44 @@ function render() {
   $('status').innerHTML = `Status: <b>${esc(state.session.status)}</b>`;
   $('years').textContent = `Tax Years: ${state.session.taxYears.join(', ')}`;
 
-  $('requests').innerHTML = (state.session.requests || []).map((r) => `<div class="file"><div>${esc(r.text)}</div><div>${esc(r.priority)}</div></div>`).join('') || '<div class="muted">No requests right now.</div>';
-  $('files').innerHTML = (state.session.files || []).map((f) => `<div class="file"><div><b>${esc(f.originalName)}</b><div class="muted">${esc(f.category)} v${esc(f.version)}</div></div><div><div>${esc(f.source)}</div><button class="viewPortalFileBtn" data-id="${esc(f.id)}" style="width:auto;margin-top:6px;padding:5px 9px;">View</button></div></div>`).join('') || '<div class="muted">No files yet.</div>';
+  const pendingRequests = (state.session.requests || []).filter((r) => !r.completed);
+  $('requestsPreview').innerHTML = pendingRequests.length
+    ? pendingRequests.slice(0, 4).map((r) => `<div class="file"><div>${esc(r.text)}</div><span class="pill">${esc(r.priority || 'normal')}</span></div>`).join('')
+    : '<div class="muted">No active requests.</div>';
 
-  document.querySelectorAll('.viewPortalFileBtn').forEach((el) => {
+  $('requests').innerHTML = (state.session.requests || []).length
+    ? (state.session.requests || []).map((r) => `
+      <div class="request-card">
+        <div class="row"><b>${esc(r.text)}</b><span class="pill">${esc(r.priority || 'normal')}</span></div>
+        <div class="muted small">${r.completed ? 'Completed' : 'Pending upload'}</div>
+        ${r.completed ? '' : uploadInputHtml(r.id)}
+      </div>
+    `).join('')
+    : '<div class="muted">No requests right now.</div>';
+
+  $('recentFiles').innerHTML = (state.session.files || []).slice(0, 8).map((f) => `
+    <div class="file">
+      <div><b>${esc(f.originalName)}</b><div class="muted small">${esc(f.category)} · v${esc(f.version)}</div></div>
+      <button class="viewPortalFileBtn" data-id="${esc(f.id)}" style="width:auto;">View</button>
+    </div>
+  `).join('') || '<div class="muted">No files yet.</div>';
+
+  document.querySelectorAll('#recentFiles .viewPortalFileBtn').forEach((el) => {
     el.onclick = () => {
       const id = el.getAttribute('data-id');
-      if (!state.session || !state.portalCode) return;
       const u = `/api/files/${encodeURIComponent(state.session.id)}/${encodeURIComponent(id)}?portalCode=${encodeURIComponent(state.portalCode)}`;
       window.open(u, '_blank', 'noopener');
     };
   });
-  $('checklist').innerHTML = (state.session.checklist || []).map((c) => `<div class="file"><div>${esc(c.doc)}</div><div>${c.found ? 'Received' : 'Needed'}</div></div>`).join('');
+
+  bindRequestUploadInputs();
+
+  $('checklist').innerHTML = (state.session.checklist || [])
+    .map((c) => `<div class="file"><div>${esc(c.doc)}</div><div>${c.found ? 'Received' : 'Needed'}</div></div>`)
+    .join('');
+
+  renderFileManager();
+  maybeShowRequestPopup();
 }
 
 async function signIn() {
@@ -83,7 +238,7 @@ async function signIn() {
   }
 }
 
-async function upload(file, source = 'client-upload') {
+async function upload(file, source = 'client-upload', category = null) {
   if (!file || !state.session) return;
   try {
     setError('');
@@ -94,7 +249,7 @@ async function upload(file, source = 'client-upload') {
         portalCode: state.portalCode,
         base64,
         originalName: file.name,
-        category: $('clientFolder').value,
+        category: category || $('clientFolder').value,
         source
       })
     });
@@ -111,6 +266,15 @@ $('clientFile').onchange = async (e) => {
   e.target.value = '';
 };
 
+$('navClientDashboard').onclick = () => setView('overview');
+$('navClientRequests').onclick = () => setView('requests');
+$('navClientFiles').onclick = () => setView('files');
+$('closePopup').onclick = () => { $('requestPopup').style.display = 'none'; };
+$('backToClientFolders').onclick = () => {
+  state.fileFolder = null;
+  renderFileManager();
+};
+
 const params = new URLSearchParams(window.location.search);
 const qpCode = params.get('code');
 if (params.get('from') === 'admin') $('adminJump').style.display = 'block';
@@ -120,4 +284,5 @@ if (qpCode) {
 
 const savedTheme = (() => { try { return localStorage.getItem('nexus.portal.theme'); } catch { return null; } })();
 applyTheme(savedTheme || 'light');
+setView('overview');
 if (qpCode) signIn();

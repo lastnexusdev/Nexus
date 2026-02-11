@@ -47,36 +47,80 @@
         </section>
 
         <section id="sessionPane" style="display:none">
-          <div class="grid two">
-            <article class="card">
-              <h3 id="welcome"></h3>
-              <p id="status" class="muted"></p>
-              <p id="years" class="muted"></p>
+          <nav class="client-nav">
+            <button id="navClientDashboard" class="nav-pill active">Overview</button>
+            <button id="navClientRequests" class="nav-pill">Requests</button>
+            <button id="navClientFiles" class="nav-pill">File Manager</button>
+          </nav>
 
-              <h4>Requested Documents</h4>
+          <section id="clientViewDashboard" class="client-view">
+            <div class="grid two">
+              <article class="card">
+                <h3 id="welcome"></h3>
+                <p id="status" class="muted"></p>
+                <p id="years" class="muted"></p>
+                <h4>Latest Requested Documents</h4>
+                <div id="requestsPreview" class="list"></div>
+              </article>
+
+              <article class="card">
+                <h3>Quick Upload</h3>
+                <p class="muted">Use this for anything requested by your preparer.</p>
+                <select id="clientFolder">
+                  <option>Intake</option>
+                  <option>Current Year/W2s</option>
+                  <option>Current Year/1099s</option>
+                  <option>Current Year/K-1s</option>
+                  <option>Misc</option>
+                </select>
+                <input id="clientFile" type="file" />
+              </article>
+            </div>
+          </section>
+
+          <section id="clientViewRequests" class="client-view" style="display:none">
+            <article class="card">
+              <h3>Requested Documents</h3>
+              <p class="muted">You can upload directly from each request card.</p>
               <div id="requests" class="list"></div>
-
-              <h4>Upload Documents</h4>
-              <select id="clientFolder">
-                <option>Intake</option>
-                <option>Current Year/W2s</option>
-                <option>Current Year/1099s</option>
-                <option>Current Year/K-1s</option>
-                <option>Misc</option>
-              </select>
-              <input id="clientFile" type="file" />
             </article>
+          </section>
 
+          <section id="clientViewFiles" class="client-view" style="display:none">
             <article class="card">
-              <h3>Your Files</h3>
-              <div id="files" class="list"></div>
+              <div class="row">
+                <h3 style="margin:0">Your File Manager</h3>
+                <button id="backToClientFolders" style="width:auto;display:none;">← Back to folders</button>
+              </div>
+              <div id="clientFilesBreadcrumb" class="muted small" style="margin:8px 0"></div>
+              <div id="clientFolders" class="list"></div>
+              <div id="clientFiles" class="list" style="display:none"></div>
+            </article>
+          </section>
 
+          <section class="grid two">
+            <article class="card">
               <h3>Checklist</h3>
               <div id="checklist" class="list"></div>
             </article>
-          </div>
+            <article class="card">
+              <h3>Recent Uploads</h3>
+              <div id="recentFiles" class="list"></div>
+            </article>
+          </section>
         </section>
       </main>
+    </div>
+
+    <div id="requestPopup" class="request-popup" style="display:none">
+      <div class="popup-card">
+        <div class="row">
+          <h3 style="margin:0">Action Required</h3>
+          <button id="closePopup" class="toggle" style="width:auto">Dismiss</button>
+        </div>
+        <p class="muted">Your preparer requested documents. Upload them from Requests or Quick Upload.</p>
+        <div id="popupRequests" class="list"></div>
+      </div>
     </div>
 
     <script src="/client.js"></script>
