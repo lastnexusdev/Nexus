@@ -133,6 +133,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 
 - Client portal now includes separated sections for **Overview**, **Requests**, and **File Manager** to reduce clutter and guide clients through tasks.
 - Client home page now uses a navigation-first layout (Back/Home/Files/Meeting/History) with action rows for Requests, Files, Meeting, and History inspired by a professional tax-portal dashboard style.
+- Meeting is now embedded directly in the client portal using your self-hosted Jitsi deployment (`https://jitsi.guildspeak.com`) via a dedicated in-app **Meeting** section.
 - Removed the legacy portal-code entry card from client UI; portal now expects an existing client session/link flow and auto-loads from provided/saved portal context.
 - Added a redesigned client-portal footer section for **Upcoming Tax Deadlines** (Q1–Q4 estimate due dates with day countdowns), driven from Admin Settings.
 - Removed the old bottom checklist/recent-upload panels; checklist is now a dedicated **Checklist Questionnaire** section opened from the Home action row, with client-side completion tracking and submit action.
