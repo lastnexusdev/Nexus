@@ -414,7 +414,7 @@ function renderFullClientList() {
         <td>${esc(c.email || '-')}</td>
         <td>${esc(c.assignedStaff || 'Unassigned')}</td>
         <td>${esc(c.entityType)}</td>
-        <td class="dt-actions-cell"><div class="dt-actions"><button class="dt-act-btn dt-act-edit selectClientRowBtn" data-id="${esc(c.id)}">Edit</button><button class="dt-act-btn dt-act-del deleteClientBtn" data-id="${esc(c.id)}">Delete</button></div></td>
+        <td class="dt-actions-cell"><div class="dt-actions"><button class="dt-act-btn dt-act-archive archiveClientBtn" data-id="${esc(c.id)}">Archive &amp; Remove</button></div></td>
       </tr>`;
     }).join('')
     : '<tr><td colspan="7" class="small muted" style="text-align:center;padding:28px;">No clients match the current filters.</td></tr>';
@@ -427,26 +427,37 @@ function renderFullClientList() {
   // Pagination
   renderPagination(totalRows);
 
-  // Edit button handlers
-  document.querySelectorAll('.selectClientRowBtn').forEach((el) => {
-    el.onclick = async () => {
-      state.selectedId = el.getAttribute('data-id');
-      await loadSelected();
-      state.fileManagerYear = null;
-      state.fileManagerFolder = null;
-      renderClientsPage();
-    };
-  });
-
-  // Delete button handlers
-  document.querySelectorAll('.deleteClientBtn').forEach((el) => {
-    el.onclick = async () => {
+  // Archive & Remove button handlers
+  document.querySelectorAll('.archiveClientBtn').forEach((el) => {
+    el.onclick = async (ev) => {
+      ev.stopPropagation();
       const id = el.getAttribute('data-id');
       const client = state.clients.find((c) => c.id === id);
       const name = client ? clientDisplayName(client) : 'this client';
-      if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+      if (!confirm(`Archive & remove ${name}?\n\nA ZIP of all their data and documents will be downloaded, then the client will be removed from the active list.`)) return;
       try {
-        await jfetch(`/api/admin/clients/${id}`, { method: 'DELETE', headers: HEADERS });
+        el.disabled = true;
+        el.textContent = 'Archiving...';
+        const resp = await fetch(`/api/admin/clients/${id}/archive`, {
+          method: 'POST',
+          headers: { 'x-user': 'Admin User', 'x-role': 'Admin' }
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.error || 'Archive failed');
+        }
+        // Trigger download
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const disposition = resp.headers.get('content-disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        a.download = match ? match[1] : `${name.replace(/\s+/g, '_')}_archive.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
         if (state.selectedId === id) {
           state.selected = null;
           state.selectedId = null;
@@ -454,6 +465,8 @@ function renderFullClientList() {
         await refresh();
       } catch (e) {
         setError(e.message);
+        el.disabled = false;
+        el.textContent = 'Archive & Remove';
       }
     };
   });
@@ -906,6 +919,40 @@ $('openClientFilesBtn').onclick = () => {
 
 $('closeClientFilesBtn').onclick = () => {
   $('clientFilesPage').style.display = 'none';
+};
+
+// Restore Client from ZIP
+$('restoreClientBtn').onclick = () => {
+  $('restoreFileInput').click();
+};
+
+$('restoreFileInput').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.name.endsWith('.zip')) {
+    setError('Please select a .zip archive file.');
+    e.target.value = '';
+    return;
+  }
+  if (!confirm(`Restore client from "${file.name}"?\n\nThis will re-add the archived client and all their documents.`)) {
+    e.target.value = '';
+    return;
+  }
+  try {
+    const buf = await file.arrayBuffer();
+    const resp = await fetch('/api/admin/clients/restore', {
+      method: 'POST',
+      headers: { 'x-user': 'Admin User', 'x-role': 'Admin' },
+      body: new Uint8Array(buf)
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Restore failed');
+    e.target.value = '';
+    await refresh();
+  } catch (err) {
+    setError(err.message);
+    e.target.value = '';
+  }
 };
 
 setView('dashboard');

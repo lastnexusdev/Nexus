@@ -110,6 +110,8 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 .dt-toolbar-right { display:flex; align-items:center; gap:8px; }
 .dt-add-btn { width:auto; margin:0; padding:7px 16px; border-radius:6px; font-size:13px; font-weight:600; white-space:nowrap; border:none; background:#fff; color:#1d1f39; cursor:pointer; }
 .dt-add-btn:hover { background:#e8ecf6; }
+.dt-restore-btn { width:auto; margin:0; padding:7px 16px; border-radius:6px; font-size:13px; font-weight:600; white-space:nowrap; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.1); color:#ccd6ff; cursor:pointer; }
+.dt-restore-btn:hover { background:rgba(255,255,255,.18); color:#fff; }
 .dt-toolbar-filter { width:auto; margin:0; padding:7px 10px; border:1px solid rgba(255,255,255,.2); border-radius:6px; font-size:12px; background:rgba(255,255,255,.08); color:#ccd6ff; cursor:pointer; min-width:140px; }
 .dt-toolbar-filter option { background:#1d1f39; color:#e7ebff; }
 .dt-search-wrap { position:relative; }
@@ -155,10 +157,8 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 .dt-actions { display:flex; gap:6px; align-items:center; }
 .dt-act-btn { width:auto; margin:0; padding:4px 12px; font-size:12px; border-radius:4px; cursor:pointer; font-weight:500; border:1px solid #d1d5db; background:#fff; color:#374151; }
 .dt-act-btn:hover { background:#f3f4f6; }
-.dt-act-edit { color:#2563eb; border-color:#93c5fd; }
-.dt-act-edit:hover { background:#eff6ff; }
-.dt-act-del { color:#dc2626; border-color:#fca5a5; }
-.dt-act-del:hover { background:#fef2f2; }
+.dt-act-archive { color:#92400e; border-color:#fbbf24; background:#fffbeb; }
+.dt-act-archive:hover { background:#fef3c7; }
 
 /* ===================== PAGINATION ===================== */
 .dt-pagination { display:flex; align-items:center; justify-content:center; gap:4px; padding:12px 0 4px; background:#fff; border:1px solid #e2e7f2; border-top:none; border-radius:0 0 8px 8px; }

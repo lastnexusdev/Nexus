@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import zlib from 'zlib';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -175,6 +176,134 @@ function computeChecklist(client) {
   return docs.map((d) => ({ doc: d, found: client.files.some((f) => f.originalName.toLowerCase().includes(d.toLowerCase().replace(/[^a-z0-9]/gi, ''))) }));
 }
 
+/* ---- Minimal ZIP builder (no external deps) ---- */
+function buildZip(entries) {
+  // entries: [{ name: string, data: Buffer }]
+  const localHeaders = [];
+  const centralHeaders = [];
+  let offset = 0;
+  for (const { name, data } of entries) {
+    const nameB = Buffer.from(name, 'utf8');
+    const crc = crc32(data);
+    // Local file header
+    const lh = Buffer.alloc(30 + nameB.length);
+    lh.writeUInt32LE(0x04034b50, 0);    // signature
+    lh.writeUInt16LE(20, 4);             // version needed
+    lh.writeUInt16LE(0, 6);              // flags
+    lh.writeUInt16LE(0, 8);              // compression (store)
+    lh.writeUInt16LE(0, 10);             // mod time
+    lh.writeUInt16LE(0, 12);             // mod date
+    lh.writeUInt32LE(crc, 14);           // crc-32
+    lh.writeUInt32LE(data.length, 18);   // compressed size
+    lh.writeUInt32LE(data.length, 22);   // uncompressed size
+    lh.writeUInt16LE(nameB.length, 26);  // file name length
+    lh.writeUInt16LE(0, 28);             // extra field length
+    nameB.copy(lh, 30);
+    localHeaders.push(Buffer.concat([lh, data]));
+    // Central directory header
+    const ch = Buffer.alloc(46 + nameB.length);
+    ch.writeUInt32LE(0x02014b50, 0);
+    ch.writeUInt16LE(20, 4);
+    ch.writeUInt16LE(20, 6);
+    ch.writeUInt16LE(0, 8);
+    ch.writeUInt16LE(0, 10);
+    ch.writeUInt16LE(0, 12);
+    ch.writeUInt16LE(0, 14);
+    ch.writeUInt32LE(crc, 16);
+    ch.writeUInt32LE(data.length, 20);
+    ch.writeUInt32LE(data.length, 24);
+    ch.writeUInt16LE(nameB.length, 28);
+    ch.writeUInt16LE(0, 30);
+    ch.writeUInt16LE(0, 32);
+    ch.writeUInt16LE(0, 34);
+    ch.writeUInt16LE(0, 36);
+    ch.writeUInt32LE(0, 38);
+    ch.writeUInt32LE(offset, 42);
+    nameB.copy(ch, 46);
+    centralHeaders.push(ch);
+    offset += lh.length + data.length;
+  }
+  const centralBuf = Buffer.concat(centralHeaders);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(0, 4);
+  eocd.writeUInt16LE(0, 6);
+  eocd.writeUInt16LE(entries.length, 8);
+  eocd.writeUInt16LE(entries.length, 10);
+  eocd.writeUInt32LE(centralBuf.length, 12);
+  eocd.writeUInt32LE(offset, 16);
+  eocd.writeUInt16LE(0, 20);
+  return Buffer.concat([...localHeaders, centralBuf, eocd]);
+}
+
+function crc32(buf) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) {
+    crc ^= buf[i];
+    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (crc & 1 ? 0xEDB88320 : 0);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function collectClientFiles(clientId) {
+  const entries = [];
+  const clientDir = path.join(storageDir, clientId);
+  if (!fs.existsSync(clientDir)) return entries;
+  (function walk(dir, prefix) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(path.join(dir, entry.name), rel);
+      else entries.push({ name: `files/${rel}`, data: fs.readFileSync(path.join(dir, entry.name)) });
+    }
+  })(clientDir, '');
+  return entries;
+}
+
+/* ---- Minimal ZIP reader (no external deps) ---- */
+function readZip(buf) {
+  const entries = [];
+  // Find EOCD
+  let eocdOff = -1;
+  for (let i = buf.length - 22; i >= 0; i--) {
+    if (buf.readUInt32LE(i) === 0x06054b50) { eocdOff = i; break; }
+  }
+  if (eocdOff < 0) throw new Error('Not a valid ZIP file');
+  const cdOffset = buf.readUInt32LE(eocdOff + 16);
+  const cdCount = buf.readUInt16LE(eocdOff + 10);
+  let pos = cdOffset;
+  for (let i = 0; i < cdCount; i++) {
+    if (buf.readUInt32LE(pos) !== 0x02014b50) break;
+    const nameLen = buf.readUInt16LE(pos + 28);
+    const extraLen = buf.readUInt16LE(pos + 30);
+    const commentLen = buf.readUInt16LE(pos + 32);
+    const localOff = buf.readUInt32LE(pos + 42);
+    const name = buf.slice(pos + 46, pos + 46 + nameLen).toString('utf8');
+    // Read from local header
+    const lNameLen = buf.readUInt16LE(localOff + 26);
+    const lExtraLen = buf.readUInt16LE(localOff + 28);
+    const compSize = buf.readUInt32LE(localOff + 18);
+    const dataStart = localOff + 30 + lNameLen + lExtraLen;
+    const data = buf.slice(dataStart, dataStart + compSize);
+    entries.push({ name, data });
+    pos += 46 + nameLen + extraLen + commentLen;
+  }
+  return entries;
+}
+
+function parseRawBody(req, maxSize = 100_000_000) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > maxSize) { req.destroy(); reject(new Error('Upload too large')); }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
 function routeApi(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const db = loadDb();
@@ -282,6 +411,59 @@ function routeApi(req, res) {
     addAudit(db, { actor: a.user, role: a.role, action: 'DELETE_CLIENT', clientId: adminClientDel[1] });
     saveDb(db);
     return send(res, 200, { ok: true });
+  }
+
+  // Archive: bundle client data + files into ZIP, remove from DB
+  const adminArchive = url.pathname.match(/^\/api\/admin\/clients\/([^/]+)\/archive$/);
+  if (adminArchive && req.method === 'POST') {
+    if (!['Admin', 'Preparer'].includes(a.role)) return send(res, 403, { error: 'Forbidden' });
+    const clientIdx = db.clients.findIndex((c) => c.id === adminArchive[1]);
+    if (clientIdx === -1) return send(res, 404, { error: 'Client not found' });
+    const client = db.clients[clientIdx];
+    const entries = [
+      { name: 'client.json', data: Buffer.from(JSON.stringify(client, null, 2), 'utf8') },
+      ...collectClientFiles(client.id)
+    ];
+    const zip = buildZip(entries);
+    db.clients.splice(clientIdx, 1);
+    addAudit(db, { actor: a.user, role: a.role, action: 'ARCHIVE_CLIENT', clientId: client.id });
+    saveDb(db);
+    const safeName = sanitize(displayName(client) || client.id);
+    res.writeHead(200, {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${safeName}_archive.zip"`,
+      'Content-Length': zip.length
+    });
+    res.end(zip);
+    return true;
+  }
+
+  // Restore: accept a ZIP archive and re-add the client + files
+  if (url.pathname === '/api/admin/clients/restore' && req.method === 'POST') {
+    if (!['Admin', 'Preparer'].includes(a.role)) return send(res, 403, { error: 'Forbidden' });
+    return parseRawBody(req).then((raw) => {
+      const entries = readZip(raw);
+      const metaEntry = entries.find((e) => e.name === 'client.json');
+      if (!metaEntry) return send(res, 400, { error: 'Invalid archive: missing client.json' });
+      const client = JSON.parse(metaEntry.data.toString('utf8'));
+      // Guard against duplicate IDs
+      if (db.clients.some((c) => c.id === client.id)) return send(res, 409, { error: 'Client already exists' });
+      // Restore files to storage
+      for (const entry of entries) {
+        if (entry.name === 'client.json') continue;
+        if (!entry.name.startsWith('files/')) continue;
+        const rel = entry.name.slice('files/'.length);
+        const dest = path.join(storageDir, client.id, rel);
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, entry.data);
+      }
+      client.updatedAt = new Date().toISOString();
+      client.events.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), message: 'Restored from archive', by: a.user });
+      db.clients.unshift(client);
+      addAudit(db, { actor: a.user, role: a.role, action: 'RESTORE_CLIENT', clientId: client.id });
+      saveDb(db);
+      send(res, 201, client);
+    }).catch((e) => send(res, 400, { error: e.message }));
   }
 
   const adminUpload = url.pathname.match(/^\/api\/admin\/clients\/([^/]+)\/upload$/);

@@ -100,10 +100,12 @@
               <!-- Status filter tabs with counts -->
               <div class="dt-status-tabs" id="statusTabs"></div>
 
-              <!-- Dark toolbar: Add button left, filter + search right -->
+              <!-- Dark toolbar: Add + Restore left, filter + search right -->
               <div class="dt-toolbar">
                 <div class="dt-toolbar-left">
                   <button id="addClientBtn" class="dt-add-btn">+ Add</button>
+                  <button id="restoreClientBtn" class="dt-restore-btn">Restore</button>
+                  <input id="restoreFileInput" type="file" accept=".zip" style="display:none" />
                 </div>
                 <div class="dt-toolbar-right">
                   <select id="filterStaff" class="dt-toolbar-filter"><option value="">Filter by Tax Pro</option></select>
