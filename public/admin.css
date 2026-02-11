@@ -144,8 +144,8 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 .dt-sortable[data-dir='desc']::after { content:' \2193'; color:#1d1f39; }
 .dt-sortable:hover { color:#1e2535; }
 
-/* Status chips */
-.status-chip { display:inline-block; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:600; line-height:1; }
+/* Status chips — drop shadow to stand out on matching rows */
+.status-chip { display:inline-block; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:600; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04); }
 .status-chip--in-progress { background:#dbeafe; color:#1e40af; }
 .status-chip--missing-docs { background:#fee2e2; color:#991b1b; }
 .status-chip--data-entry { background:#fef3cd; color:#856404; }
@@ -155,13 +155,24 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 .status-chip--extended { background:#fef9c3; color:#854d0e; }
 .status-chip--archived { background:#e5e7eb; color:#374151; }
 
-/* Row tones (subtle) */
-.dt-table tr.row-new-upload td { background:#fffbeb; }
-.dt-table tr.row-complete td { background:#f0fdf4; }
-.dt-table tr.row-at-risk td { background:#fef2f2; }
-.dt-table tr.row-new-upload:hover td { background:#fef8dc; }
-.dt-table tr.row-complete:hover td { background:#e4f5e8; }
-.dt-table tr.row-at-risk:hover td { background:#fde6e6; }
+/* Row tones — match each status chip color as a subtle tint */
+.dt-table tr.row-status-in-progress td   { background:#eff6ff; }
+.dt-table tr.row-status-missing-docs td  { background:#fef2f2; }
+.dt-table tr.row-status-data-entry td    { background:#fffbeb; }
+.dt-table tr.row-status-review td        { background:#f0f9ff; }
+.dt-table tr.row-status-ready-to-file td { background:#f0fdf4; }
+.dt-table tr.row-status-filed td         { background:#f0fdf4; }
+.dt-table tr.row-status-extended td      { background:#fefce8; }
+.dt-table tr.row-status-archived td      { background:#f3f4f6; }
+
+.dt-table tr.row-status-in-progress:hover td   { background:#dbeafe; }
+.dt-table tr.row-status-missing-docs:hover td  { background:#fee2e2; }
+.dt-table tr.row-status-data-entry:hover td    { background:#fef3c7; }
+.dt-table tr.row-status-review:hover td        { background:#e0f2fe; }
+.dt-table tr.row-status-ready-to-file:hover td { background:#dcfce7; }
+.dt-table tr.row-status-filed:hover td         { background:#dcfce7; }
+.dt-table tr.row-status-extended:hover td      { background:#fef9c3; }
+.dt-table tr.row-status-archived:hover td      { background:#e5e7eb; }
 
 /* Action buttons in table */
 .dt-actions { display:flex; gap:6px; align-items:center; }

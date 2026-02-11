@@ -321,15 +321,17 @@ function populateClientFilters() {
 }
 
 function clientRowTone(client) {
-  const uploads = (state.dash?.audit || []).filter((a) => a.action === 'CLIENT_UPLOAD' && a.clientId === client.id);
-  const hasUnseenUpload = uploads.some((a) => !state.notifSeenIds.has(a.id));
-  if (hasUnseenUpload) return 'row-new-upload';
-  if (['Filed', 'Archived'].includes(client.status)) return 'row-complete';
-  if (client.status === 'In Progress') return 'row-in-progress';
-  const missingMap = new Map((state.dash?.missing || []).map((m) => [m.id, m.missing.length]));
-  const missingCount = missingMap.get(client.id) || 0;
-  if (riskLevel(missingCount, client.status) === 'red') return 'row-at-risk';
-  return '';
+  const map = {
+    'In Progress':    'row-status-in-progress',
+    'Missing Docs':   'row-status-missing-docs',
+    'Data Entry':     'row-status-data-entry',
+    'Review':         'row-status-review',
+    'Ready to File':  'row-status-ready-to-file',
+    'Filed':          'row-status-filed',
+    'Extended':       'row-status-extended',
+    'Archived':       'row-status-archived'
+  };
+  return map[client.status] || '';
 }
 
 function statusChipClass(status) {
