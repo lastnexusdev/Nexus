@@ -398,7 +398,7 @@ async function refresh() {
       jfetch('/api/meta'),
       jfetch('/api/admin/dashboard'),
       jfetch('/api/admin/clients?q='),
-      jfetch('/api/admin/settings')
+      jfetch('/api/admin/settings', { headers: HEADERS })
     ]);
     state.meta = meta;
     state.dash = dash;
