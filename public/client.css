@@ -73,21 +73,8 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 .hero h1 { margin: 6px 0 6px; font-size: clamp(1.4rem, 2.8vw, 2.6rem); }
 .hero-art { font-size: 54px; opacity: .9; }
 
-.sign-in-card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.sign-controls { display: flex; gap: 8px; align-items: end; }
-.sign-controls input { min-width: 230px; }
 .error { color: var(--error); min-height: 18px; margin: 4px 0 10px; }
 
-.deadline-bar { margin-bottom: 12px; }
-.deadline-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px; min-width: 390px; }
-.deadline-item { border:1px solid var(--line); border-radius:10px; padding:8px; background: rgba(255,255,255,.02); }
-.deadline-item span { display:block; font-size:11px; color:var(--muted); }
 
 .banner { border-left: 4px solid #3b7ddd; margin-bottom: 12px; }
 .back-link { margin-left: 8px; }
@@ -132,7 +119,6 @@ body { margin: 0; background: var(--bg); color: var(--text); }
 
 .grid { display: grid; gap: 12px; }
 .grid.two { grid-template-columns: 1fr 1fr; }
-.aux-panels { margin-top: 12px; }
 
 .client-view { margin-top: 12px; }
 .quick-upload-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
@@ -172,6 +158,18 @@ button.primary {
   margin-bottom: 8px;
   background: rgba(255,255,255,.02);
 }
+.check-item {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px;
+  margin-bottom:8px;
+}
+.check-item label { display:flex; align-items:center; gap:8px; font-weight:600; }
+.check-item .state { font-size: 12px; color: var(--muted); }
 .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pill { border-radius: 999px; padding: 3px 8px; font-size: 11px; background: #edf2ff; color: #3c57b5; }
 .folder-btn { display:block; width:100%; text-align:left; margin:0 0 8px 0; }
@@ -209,39 +207,42 @@ button.primary {
   .portal-nav { grid-template-columns: 1fr; gap: 8px; }
   .nav-left, .nav-right { justify-self: stretch; }
   .hero, .summary-head, .grid.two, .summary-grid { grid-template-columns: 1fr; }
-  .sign-controls { flex-direction: column; align-items: stretch; }
   .quick-upload-row { flex-direction: column; align-items: stretch; }
   .quick-upload-row select, .quick-upload-row input { width: 100%; }
   .action-row { grid-template-columns: 1fr; }
   .action-btn { width: 100%; }
-  .deadline-footer-grid { grid-template-columns: 1fr 1fr; }
+  .deadline-footer-grid { grid-template-columns: 1fr; }
 }
 
 
 .deadline-footer {
   margin-top: 22px;
-  padding: 28px 14px 18px;
+  padding: 26px 14px 10px;
   text-align: center;
 }
 .deadline-footer h2 {
   margin: 0;
-  letter-spacing: .04em;
-  font-size: clamp(1.2rem, 2.1vw, 2rem);
+  letter-spacing: .05em;
+  font-size: clamp(1.15rem, 2vw, 1.9rem);
 }
 .deadline-divider {
   width: 106px;
   height: 2px;
   background: #435e86;
-  margin: 16px auto 20px;
+  margin: 16px auto 24px;
   border-radius: 999px;
 }
 .deadline-footer-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 14px;
 }
 .deadline-card {
-  padding: 10px 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 12px;
+  box-shadow: 0 12px 22px rgba(17, 36, 63, .08);
 }
 .deadline-card .days {
   display: inline-flex;
@@ -250,20 +251,22 @@ button.primary {
   color: #87b798;
 }
 .deadline-card .days b {
-  font-size: clamp(2rem, 3.4vw, 3.7rem);
+  font-size: clamp(2rem, 3vw, 3.2rem);
   line-height: 1;
 }
 .deadline-card .days span {
   color: var(--text);
-  font-size: 1.45rem;
+  font-size: 1rem;
 }
 .deadline-card .label {
-  margin-top: 8px;
-  font-size: 1.4rem;
+  margin-top: 10px;
+  font-size: 1rem;
+  font-weight: 600;
 }
 .deadline-card .date {
-  margin-top: 3px;
-  font-size: 1.35rem;
+  margin-top: 4px;
+  font-size: .95rem;
+  color: var(--muted);
 }
 body[data-theme="dark"] .deadline-divider { background: #8da7cd; }
 body[data-theme="dark"] .deadline-card .days { color: #8ec8a2; }

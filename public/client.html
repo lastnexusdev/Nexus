@@ -93,6 +93,15 @@
                 </div>
                 <button id="actionHistory" class="action-btn">Action History</button>
               </article>
+
+              <article class="action-row">
+                <div class="action-icon">📝</div>
+                <div>
+                  <h4>Checklist Questionnaire</h4>
+                  <p class="muted">Open your checklist and complete questionnaire items in one place.</p>
+                </div>
+                <button id="actionChecklist" class="action-btn">Open Checklist</button>
+              </article>
             </div>
           </section>
 
@@ -123,14 +132,24 @@
             </article>
           </section>
 
-          <section class="grid two aux-panels">
+
+          <section id="clientViewHistory" class="client-view" style="display:none">
             <article class="card">
-              <h3>Checklist</h3>
-              <div id="checklist" class="list"></div>
-            </article>
-            <article class="card">
-              <h3>Recent Uploads</h3>
+              <h3>Action History</h3>
+              <p class="muted">Review your latest uploads and file activity.</p>
               <div id="recentFiles" class="list"></div>
+            </article>
+          </section>
+
+          <section id="clientViewChecklist" class="client-view" style="display:none">
+            <article class="card">
+              <h3>Checklist Questionnaire</h3>
+              <p class="muted">Mark each item as completed and submit your questionnaire progress.</p>
+              <div id="checklist" class="list"></div>
+              <div class="row" style="justify-content:flex-end; margin-top:10px;">
+                <button id="submitQuestionnaireBtn" class="primary" style="width:auto;">Submit Questionnaire</button>
+              </div>
+              <div id="questionnaireNotice" class="small muted"></div>
             </article>
           </section>
         </section>
@@ -139,6 +158,16 @@
           <h2>UPCOMING TAX DEADLINES</h2>
           <div class="deadline-divider"></div>
           <div class="deadline-footer-grid">
+            <article class="deadline-card">
+              <div class="days"><b id="seasonStartDays">--</b> <span>days</span></div>
+              <div class="label">Tax Season Start</div>
+              <div id="seasonStartDate" class="date">--</div>
+            </article>
+            <article class="deadline-card">
+              <div class="days"><b id="seasonEndDays">--</b> <span>days</span></div>
+              <div class="label">Tax Season End</div>
+              <div id="seasonEndDate" class="date">--</div>
+            </article>
             <article class="deadline-card">
               <div class="days"><b id="q1Days">--</b> <span>days</span></div>
               <div class="label">First Quarter Estimate Due</div>

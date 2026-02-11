@@ -1,4 +1,4 @@
-const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false, meta: null };
+const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false, meta: null, questionnaire: {} };
 const $ = (id) => document.getElementById(id);
 const show = (id, on) => { const el = $(id); if (el) el.style.display = on ? '' : 'none'; };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -52,6 +52,8 @@ function countdownDays(value) {
 function renderDeadlines() {
   const d = state.meta?.deadlines || {};
   const mappings = [
+    ['seasonStart', d.taxSeasonStart],
+    ['seasonEnd', d.taxSeasonEnd],
     ['q1', d.q1EstimateDue],
     ['q2', d.q2EstimateDue],
     ['q3', d.q3EstimateDue],
@@ -79,10 +81,13 @@ function setView(view) {
   show('clientViewDashboard', view === 'overview');
   show('clientViewRequests', view === 'requests');
   show('clientViewFiles', view === 'files');
+  show('clientViewHistory', view === 'history');
+  show('clientViewChecklist', view === 'checklist');
 
-  ['navClientDashboard', 'navClientFiles'].forEach((id) => $(id)?.classList.remove('active'));
+  ['navClientDashboard', 'navClientFiles', 'historyBtn'].forEach((id) => $(id)?.classList.remove('active'));
   if (view === 'overview') $('navClientDashboard')?.classList.add('active');
   if (view === 'files') $('navClientFiles')?.classList.add('active');
+  if (['history', 'checklist'].includes(view)) $('historyBtn')?.classList.add('active');
 
   if (view === 'files') renderFileManager();
 }
@@ -94,6 +99,50 @@ function filesByFolder(files = []) {
     grouped.get(f.category).push(f);
   }
   return grouped;
+}
+
+
+function questionnaireKey() {
+  if (!state.session?.id) return '';
+  return `nexus.portal.questionnaire.${state.session.id}`;
+}
+
+function loadQuestionnaireProgress() {
+  const key = questionnaireKey();
+  if (!key) {
+    state.questionnaire = {};
+    return;
+  }
+  try {
+    state.questionnaire = JSON.parse(localStorage.getItem(key) || '{}') || {};
+  } catch {
+    state.questionnaire = {};
+  }
+}
+
+function saveQuestionnaireProgress() {
+  const key = questionnaireKey();
+  if (!key) return;
+  try { localStorage.setItem(key, JSON.stringify(state.questionnaire)); } catch {}
+}
+
+function renderChecklistQuestionnaire() {
+  const items = state.session?.checklist || [];
+  $('checklist').innerHTML = items.length
+    ? items.map((c, i) => {
+      const checked = Boolean(state.questionnaire[c.doc]);
+      return `<div class="check-item"><label><input class="checkToggle" type="checkbox" data-doc="${esc(c.doc)}" ${checked ? 'checked' : ''} /> ${esc(c.doc)}</label><div class="state">${checked ? 'Completed' : (c.found ? 'Received' : 'Needed')}</div></div>`;
+    }).join('')
+    : '<div class="muted">No checklist items.</div>';
+
+  document.querySelectorAll('.checkToggle').forEach((el) => {
+    el.onchange = () => {
+      const doc = el.getAttribute('data-doc') || '';
+      state.questionnaire[doc] = el.checked;
+      saveQuestionnaireProgress();
+      renderChecklistQuestionnaire();
+    };
+  });
 }
 
 function renderSummary() {
@@ -276,7 +325,7 @@ function render() {
     `).join('')
     : '<div class="muted">No requests right now.</div>';
 
-  $('recentFiles').innerHTML = (state.session.files || []).slice(0, 8).map((f) => `
+  $('recentFiles').innerHTML = (state.session.files || []).slice(0, 12).map((f) => `
     <div class="file">
       <div><b>${esc(f.originalName)}</b><div class="muted small">${esc(f.category)} · v${esc(f.version)}</div></div>
       <button class="viewPortalFileBtn" data-id="${esc(f.id)}" style="width:auto;">View</button>
@@ -291,12 +340,9 @@ function render() {
     };
   });
 
+  loadQuestionnaireProgress();
+  renderChecklistQuestionnaire();
   bindRequestUploadInputs();
-
-  $('checklist').innerHTML = (state.session.checklist || [])
-    .map((c) => `<div class="file"><div>${esc(c.doc)}</div><div>${c.found ? 'Received' : 'Needed'}</div></div>`)
-    .join('');
-
   renderFileManager();
   maybeShowRequestPopup();
 }
@@ -364,10 +410,15 @@ $('navClientFiles').onclick = () => setView('files');
 $('actionOpenRequests').onclick = () => setView('requests');
 $('actionOpenFiles').onclick = () => setView('files');
 $('actionMeeting').onclick = () => setError('Meeting scheduling will be enabled by your preparer.');
-$('actionHistory').onclick = () => { setView('overview'); document.getElementById('recentFiles')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+$('actionHistory').onclick = () => setView('history');
+$('actionChecklist').onclick = () => setView('checklist');
 $('meetingBtn').onclick = () => setError('Meeting scheduling will be enabled by your preparer.');
-$('historyBtn').onclick = () => { setView('overview'); document.getElementById('recentFiles')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+$('historyBtn').onclick = () => setView('history');
 $('backHomeBtn').onclick = () => setView('overview');
+$('submitQuestionnaireBtn').onclick = () => {
+  saveQuestionnaireProgress();
+  $('questionnaireNotice').textContent = 'Questionnaire progress saved. Your preparer will review your uploaded docs and answers.';
+};
 $('closePopup').onclick = () => {
   state.popupDismissed = true;
   document.querySelectorAll('.requestFile').forEach((el) => { el.value = ''; });

@@ -135,6 +135,7 @@ The frontend no longer depends on `unpkg` (React/Babel CDNs). Both portals now u
 - Client home page now uses a navigation-first layout (Back/Home/Files/Meeting/History) with action rows for Requests, Files, Meeting, and History inspired by a professional tax-portal dashboard style.
 - Removed the legacy portal-code entry card from client UI; portal now expects an existing client session/link flow and auto-loads from provided/saved portal context.
 - Added a redesigned client-portal footer section for **Upcoming Tax Deadlines** (Q1–Q4 estimate due dates with day countdowns), driven from Admin Settings.
+- Removed the old bottom checklist/recent-upload panels; checklist is now a dedicated **Checklist Questionnaire** section opened from the Home action row, with client-side completion tracking and submit action.
 - Admin Settings now include configurable fields for Q1/Q2/Q3/Q4 estimate due dates in addition to tax season start/end.
 - Added an action popup for pending document requests immediately after sign-in, with a direct upload control on each request card.
 - Added folder-first file manager navigation for clients (folders → files → view).
