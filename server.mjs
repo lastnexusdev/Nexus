@@ -48,7 +48,7 @@ function mimeFromName(name) {
 }
 function computeChecklist(client) {
   const docs = REQUIRED[client.entityType] || REQUIRED.default;
-  return docs.map((d) => ({ doc: d, found: client.files.some((f) => f.originalName.toLowerCase().includes(d.toLowerCase().replace(/[^a-z0-9]/gi, ''))) }));
+  return docs.map((d) => ({ doc: d, found: client.files.some((f) => (f.originalName || '').toLowerCase().includes(d.toLowerCase().replace(/[^a-z0-9]/gi, ''))) }));
 }
 
 /* ============ DB ============ */
@@ -113,6 +113,12 @@ function normalizeDbShape(db) {
     if (typeof client.email !== 'string') client.email = '';
     client.email = String(client.email || '').trim();
     if (!client.portalCode) client.portalCode = `portal-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  // Ensure user fields
+  for (const user of db.users) {
+    if (typeof user.email !== 'string') user.email = '';
+    if (typeof user.name !== 'string') user.name = '';
+    if (typeof user.role !== 'string') user.role = 'Staff';
   }
   // Ensure org settings
   for (const org of db.orgs) {
@@ -250,7 +256,7 @@ function routeApi(req, res) {
     return parseBody(req).then((p) => {
       const email = String(p.email || '').trim().toLowerCase();
       const pw = hashPw(p.password || '');
-      const user = db.users.find((u) => u.email.toLowerCase() === email && u.password === pw);
+      const user = db.users.find((u) => (u.email || '').toLowerCase() === email && u.password === pw);
       if (!user) return send(res, 401, { error: 'Invalid email or password' });
       // generate fresh token
       user.token = genToken();
@@ -306,7 +312,7 @@ function routeApi(req, res) {
         const adminPw = String(p.adminPassword || 'admin');
         const adminName = String(p.adminName || `${name} Admin`).trim();
         if (!adminEmail) return send(res, 400, { error: 'Admin email is required' });
-        if (db.users.some((u) => u.email.toLowerCase() === adminEmail)) return send(res, 409, { error: 'Email already exists' });
+        if (db.users.some((u) => (u.email || '').toLowerCase() === adminEmail)) return send(res, 409, { error: 'Email already exists' });
         const adminUser = { id: `u-${Date.now()}`, orgId: org.id, name: adminName, email: adminEmail, password: hashPw(adminPw), role: 'OrgAdmin', token: genToken() };
         db.orgs.push(org);
         db.users.push(adminUser);
@@ -345,7 +351,7 @@ function routeApi(req, res) {
         const role = ['OrgAdmin', 'Staff'].includes(p.role) ? p.role : 'Staff';
         const pw = String(p.password || 'changeme');
         if (!email || !name) return send(res, 400, { error: 'Name and email required' });
-        if (db.users.some((u) => u.email.toLowerCase() === email)) return send(res, 409, { error: 'Email already exists' });
+        if (db.users.some((u) => (u.email || '').toLowerCase() === email)) return send(res, 409, { error: 'Email already exists' });
         const newUser = { id: `u-${Date.now()}`, orgId, name, email, password: hashPw(pw), role, token: genToken() };
         db.users.push(newUser);
         saveDb(db);
@@ -463,7 +469,7 @@ function routeApi(req, res) {
           const role = ['OrgAdmin', 'Staff'].includes(p.role) ? p.role : 'Staff';
           const pw = String(p.password || 'changeme');
           if (!email || !name) return send(res, 400, { error: 'Name and email required' });
-          if (db.users.some((u) => u.email.toLowerCase() === email)) return send(res, 409, { error: 'Email already exists' });
+          if (db.users.some((u) => (u.email || '').toLowerCase() === email)) return send(res, 409, { error: 'Email already exists' });
           const newUser = { id: `u-${Date.now()}`, orgId: org.id, name, email, password: hashPw(pw), role, token: genToken() };
           db.users.push(newUser);
           saveDb(db);
