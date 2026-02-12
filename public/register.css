@@ -1,0 +1,125 @@
+* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+body { margin: 0; background: #ececef; color: #1e2535; }
+
+.reg-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #1f3b63 0%, #2d4b78 50%, #1f3b63 100%);
+}
+
+.reg-card {
+  width: 420px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+
+.reg-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.reg-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #f16f4e;
+  box-shadow: 0 0 0 3px rgba(241,111,78,.2);
+}
+
+.reg-title {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #1f3b63;
+}
+
+.reg-sub {
+  font-size: 13px;
+  color: #6a7386;
+}
+
+.reg-label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6a7386;
+}
+
+.reg-card input, .reg-card select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d8dde6;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e2535;
+  background: #fafbfd;
+}
+
+.reg-card input:focus, .reg-card select:focus {
+  outline: none;
+  border-color: #1f3b63;
+  box-shadow: 0 0 0 2px rgba(31,59,99,.12);
+}
+
+.reg-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 11px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #1f3b63, #2d4b78);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reg-btn:hover { opacity: .92; }
+.reg-btn:disabled { opacity: .5; cursor: default; }
+
+.reg-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.reg-footer {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.reg-muted {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.reg-success h3 {
+  margin: 0 0 8px;
+  color: #065f46;
+}
+
+.portal-code {
+  background: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #065f46;
+  letter-spacing: .05em;
+  margin: 12px 0;
+  word-break: break-all;
+}

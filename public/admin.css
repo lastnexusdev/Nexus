@@ -199,3 +199,6 @@ button.primary { border: 0; background: linear-gradient(90deg, #7e220f, #9a331c)
 .modal-body input, .modal-body select { margin-top:4px; }
 .dt-label { display:block; margin-top:12px; font-size:12px; color:#6a7386; font-weight:600; }
 .dt-label:first-child { margin-top:0; }
+
+.logout-btn { width:auto; margin:0; margin-left:auto; padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,.2); background:transparent; color:#ccd6ff; cursor:pointer; font-size:14px; }
+.logout-btn:hover { background:rgba(255,255,255,.1); }

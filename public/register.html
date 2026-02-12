@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus TaxOps – Client Registration</title>
+    <link rel="stylesheet" href="/register.css" />
+  </head>
+  <body>
+    <div class="reg-shell">
+      <div class="reg-card">
+        <div class="reg-brand">
+          <div class="reg-dot"></div>
+          <div>
+            <div class="reg-title">Nexus TaxOps</div>
+            <div class="reg-sub" id="orgLabel">Client Registration</div>
+          </div>
+        </div>
+
+        <div id="error" class="reg-error" style="display:none"></div>
+
+        <!-- Validating state -->
+        <div id="validating">
+          <p class="reg-muted">Validating your invite link...</p>
+        </div>
+
+        <!-- Invalid invite -->
+        <div id="invalidInvite" style="display:none">
+          <p class="reg-muted">This invite link is invalid or has already been used. Please contact your tax professional for a new link.</p>
+        </div>
+
+        <!-- Registration form -->
+        <div id="regForm" style="display:none">
+          <label class="reg-label">First Name</label>
+          <input id="firstName" placeholder="First name" />
+          <label class="reg-label">Last Name</label>
+          <input id="lastName" placeholder="Last name" />
+          <label class="reg-label">Email</label>
+          <input id="email" type="email" placeholder="your@email.com" />
+          <label class="reg-label">Entity Type</label>
+          <select id="entityType">
+            <option>1040</option>
+            <option>1120</option>
+            <option>1120S</option>
+            <option>1065</option>
+          </select>
+          <button id="registerBtn" class="reg-btn">Register</button>
+        </div>
+
+        <!-- Success state -->
+        <div id="successPane" style="display:none">
+          <div class="reg-success">
+            <h3>Registration Complete!</h3>
+            <p>Welcome, <b id="successName"></b>.</p>
+            <p>Your portal access code is:</p>
+            <div class="portal-code" id="portalCode"></div>
+            <p class="reg-muted">Save this code — you'll use it to access your client portal.</p>
+            <button id="goToPortal" class="reg-btn">Open Client Portal</button>
+          </div>
+        </div>
+
+        <div class="reg-footer">
+          <span class="reg-muted">Nexus TaxOps Client Portal</span>
+        </div>
+      </div>
+    </div>
+    <script src="/register.js"></script>
+  </body>
+</html>

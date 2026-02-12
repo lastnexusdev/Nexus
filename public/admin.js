@@ -1,4 +1,16 @@
-const HEADERS = { 'Content-Type': 'application/json', 'x-user': 'Admin User', 'x-role': 'Admin' };
+// Extract org slug from URL: /org/{slug}/admin
+const ORG_SLUG = (() => {
+  const m = window.location.pathname.match(/^\/org\/([^/]+)\/admin/);
+  return m ? m[1] : '';
+})();
+const API_BASE = `/api/org/${ORG_SLUG}`;
+
+function getToken() { return localStorage.getItem('nexus.token') || ''; }
+function authHeaders(extra = {}) {
+  return { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json', ...extra };
+}
+const HEADERS = authHeaders();
+
 const state = {
   meta: null,
   dash: null,
@@ -106,7 +118,14 @@ function clientDisplayName(client = {}) {
 }
 
 async function jfetch(url, options = {}) {
+  if (!options.headers) options.headers = authHeaders();
   const res = await fetch(url, options);
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('nexus.token');
+    localStorage.removeItem('nexus.user');
+    window.location.href = '/';
+    throw new Error('Session expired');
+  }
   const text = await res.text();
   const data = text ? JSON.parse(text) : {};
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
@@ -582,9 +601,9 @@ function renderFullClientList() {
       try {
         el.disabled = true;
         el.textContent = 'Archiving...';
-        const resp = await fetch(`/api/admin/clients/${id}/archive`, {
+        const resp = await fetch(`${API_BASE}/admin/clients/${id}/archive`, {
           method: 'POST',
-          headers: { 'x-user': 'Admin User', 'x-role': 'Admin' }
+          headers: { 'Authorization': `Bearer ${getToken()}` }
         });
         if (!resp.ok) {
           const err = await resp.json();
@@ -739,8 +758,8 @@ function renderClientFilesPage() {
     el.onclick = async () => {
       try {
         const id = el.getAttribute('data-id');
-        const resp = await fetch(`/api/files/${encodeURIComponent(state.selected.id)}/${encodeURIComponent(id)}`, {
-          headers: { 'x-user': 'Admin User', 'x-role': 'Admin' }
+        const resp = await fetch(`${API_BASE}/files/${encodeURIComponent(state.selected.id)}/${encodeURIComponent(id)}`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
         });
         if (!resp.ok) throw new Error('Unable to load file');
         const blob = await resp.blob();
@@ -804,10 +823,10 @@ async function refresh() {
   try {
     setError();
     const [meta, dash, clients, settings] = await Promise.all([
-      jfetch('/api/meta'),
-      jfetch('/api/admin/dashboard'),
-      jfetch('/api/admin/clients?q='),
-      jfetch('/api/admin/settings', { headers: HEADERS })
+      jfetch(`${API_BASE}/meta`),
+      jfetch(`${API_BASE}/admin/dashboard`),
+      jfetch(`${API_BASE}/admin/clients?q=`),
+      jfetch(`${API_BASE}/admin/settings`)
     ]);
     state.meta = meta;
     state.dash = dash;
@@ -825,15 +844,15 @@ async function refresh() {
 
 async function loadSelected() {
   if (!state.selectedId) return;
-  state.selected = await jfetch(`/api/admin/clients/${state.selectedId}`);
+  state.selected = await jfetch(`${API_BASE}/admin/clients/${state.selectedId}`);
 }
 
 async function uploadFile(file, source = 'upload') {
   if (!file || !state.selectedId) return;
   const base64 = await toBase64(file);
-  await jfetch(`/api/admin/clients/${state.selectedId}/upload`, {
+  await jfetch(`${API_BASE}/admin/clients/${state.selectedId}/upload`, {
     method: 'POST',
-    headers: HEADERS,
+    headers: authHeaders(),
     body: JSON.stringify({
       base64,
       originalName: file.name,
@@ -903,9 +922,9 @@ $('addClientModal').onclick = (e) => {
 
 $('createClient').onclick = async () => {
   try {
-    await jfetch('/api/admin/clients', {
+    await jfetch(`${API_BASE}/admin/clients`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: authHeaders(),
       body: JSON.stringify({
         firstName: $('newFirstName').value.trim(),
         lastName: $('newLastName').value.trim(),
@@ -928,9 +947,9 @@ $('createClient').onclick = async () => {
 
 $('statusSelect').onchange = async () => {
   try {
-    await jfetch(`/api/admin/clients/${state.selectedId}/status`, {
+    await jfetch(`${API_BASE}/admin/clients/${state.selectedId}/status`, {
       method: 'PATCH',
-      headers: HEADERS,
+      headers: authHeaders(),
       body: JSON.stringify({ status: $('statusSelect').value })
     });
     await refresh();
@@ -950,9 +969,9 @@ $('fileInput').onchange = async (e) => {
 
 $('saveSettings').onclick = async () => {
   try {
-    await jfetch('/api/admin/settings', {
+    await jfetch(`${API_BASE}/admin/settings`, {
       method: 'PATCH',
-      headers: HEADERS,
+      headers: authHeaders(),
       body: JSON.stringify({
         deadlines: {
           taxSeasonStart: $('taxSeasonStart').value,
@@ -975,9 +994,9 @@ $('addTaxYearBtn').onclick = async () => {
   try {
     const year = $('addTaxYearSelect').value;
     if (!year) return setTaxYearFeedback('Select a year to add.', false);
-    await jfetch(`/api/admin/clients/${state.selectedId}/tax-years`, {
+    await jfetch(`${API_BASE}/admin/clients/${state.selectedId}/tax-years`, {
       method: 'PATCH',
-      headers: HEADERS,
+      headers: authHeaders(),
       body: JSON.stringify({ year })
     });
     setTaxYearFeedback(`TaxYear${year} added.`);
@@ -1002,9 +1021,9 @@ $('sendReq').onclick = async () => {
     if (!year || !docType) return setReqFeedback('Select year and document type.', false);
     const text = `Please upload ${docType} for TaxYear ${year}.`;
     $('sendReq').disabled = true;
-    await jfetch(`/api/admin/clients/${state.selectedId}/requests`, {
+    await jfetch(`${API_BASE}/admin/clients/${state.selectedId}/requests`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: authHeaders(),
       body: JSON.stringify({ text, priority: 'high', taxYear: year, docType })
     });
     setReqFeedback(`Request sent: ${docType} for TaxYear ${year}.`);
@@ -1018,9 +1037,9 @@ $('sendReq').onclick = async () => {
 
 $('saveNote').onclick = async () => {
   try {
-    await jfetch(`/api/admin/clients/${state.selectedId}/notes`, {
+    await jfetch(`${API_BASE}/admin/clients/${state.selectedId}/notes`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: authHeaders(),
       body: JSON.stringify({ text: $('noteText').value })
     });
     $('noteText').value = '';
@@ -1032,7 +1051,7 @@ $('saveNote').onclick = async () => {
 
 $('openPortal').onclick = () => {
   if (!state.selected) return;
-  window.location.href = `/portal?code=${encodeURIComponent(state.selected.portalCode)}&from=admin`;
+  window.location.href = `/org/${ORG_SLUG}/portal?code=${encodeURIComponent(state.selected.portalCode)}&from=admin`;
 };
 
 $('returnToListBtn').onclick = () => {
@@ -1075,9 +1094,9 @@ $('restoreFileInput').onchange = async (e) => {
   }
   try {
     const buf = await file.arrayBuffer();
-    const resp = await fetch('/api/admin/clients/restore', {
+    const resp = await fetch(`${API_BASE}/admin/clients/restore`, {
       method: 'POST',
-      headers: { 'x-user': 'Admin User', 'x-role': 'Admin' },
+      headers: { 'Authorization': `Bearer ${getToken()}` },
       body: new Uint8Array(buf)
     });
     const data = await resp.json();
@@ -1101,7 +1120,65 @@ document.addEventListener('click', (e) => {
   }
 });
 
-initColumns();
-setInterval(tickClock, 1000);
-tickClock();
-refresh();
+// Auth check - redirect to login if no token
+if (!ORG_SLUG) {
+  window.location.href = '/';
+} else if (!getToken()) {
+  window.location.href = '/';
+} else {
+  fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${getToken()}` } })
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data.user) { window.location.href = '/'; return; }
+      // Update sidebar with user info
+      const avatarEl = document.querySelector('.avatar');
+      const nameEl = document.querySelector('.footer-name');
+      const roleEl = document.querySelector('.footer-role');
+      if (avatarEl) avatarEl.textContent = (data.user.name || 'U').slice(0, 2).toUpperCase();
+      if (nameEl) nameEl.textContent = data.user.name;
+      if (roleEl) roleEl.textContent = data.user.role;
+      // Update topbar
+      const topUser = document.querySelector('.topbar-right span:last-child');
+      if (topUser) topUser.textContent = data.user.name;
+      // Update welcome
+      const welcomeH2 = document.querySelector('.welcome h2');
+      if (welcomeH2) welcomeH2.textContent = `Welcome, ${data.user.name.split(' ')[0]}`;
+
+      initColumns();
+      setInterval(tickClock, 1000);
+      tickClock();
+      refresh();
+    })
+    .catch(() => { window.location.href = '/'; });
+}
+
+// Logout handler
+const logoutBtn = document.querySelector('.logout-btn');
+if (logoutBtn) {
+  logoutBtn.onclick = () => {
+    localStorage.removeItem('nexus.token');
+    localStorage.removeItem('nexus.user');
+    window.location.href = '/';
+  };
+}
+
+// Invite management
+const inviteBtn = $('inviteClientBtn');
+if (inviteBtn) {
+  inviteBtn.onclick = async () => {
+    const email = prompt('Client email address for invite:');
+    if (!email) return;
+    const staff = prompt('Assign to Tax Pro (leave blank for none):', '') || '';
+    try {
+      const data = await jfetch(`${API_BASE}/admin/invites`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ email, assignedStaff: staff })
+      });
+      const fullLink = `${window.location.origin}${data.link}`;
+      prompt('Invite link created! Share this with the client:', fullLink);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+}

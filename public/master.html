@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus TaxOps – Master Panel</title>
+    <link rel="stylesheet" href="/master.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="logo-row">
+          <div class="dot"></div>
+          <div class="brand-wrap">
+            <div class="brand">Nexus TaxOps</div>
+            <div class="brand-sub">Master Panel</div>
+          </div>
+        </div>
+
+        <div class="menu-label">MANAGEMENT</div>
+        <nav class="nav">
+          <button id="navOverview" class="nav-btn active">Overview</button>
+          <button id="navOrgs" class="nav-btn">Organizations</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="avatar">SA</div>
+          <div>
+            <div class="footer-name" id="footerName">Super Admin</div>
+            <div class="footer-role">SuperAdmin</div>
+          </div>
+          <button id="logoutBtn" class="logout-btn" title="Sign out">⏻</button>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div id="topTitle">Overview</div>
+          <div class="topbar-right">
+            <span id="topUser">Super Admin</span>
+          </div>
+        </header>
+
+        <main class="main">
+          <div id="error" class="alert" style="display:none"></div>
+
+          <!-- Overview -->
+          <section id="viewOverview" class="view">
+            <div class="welcome card">
+              <h2>Master Control Panel</h2>
+              <p>Manage all organizations, users, and system-wide settings.</p>
+            </div>
+            <div id="kpis" class="kpi-grid"></div>
+            <div class="card" style="margin-top:12px;">
+              <h3>Organizations Overview</h3>
+              <div id="orgOverviewList" class="list"></div>
+            </div>
+          </section>
+
+          <!-- Organizations -->
+          <section id="viewOrgs" class="view" style="display:none">
+            <div class="card">
+              <div class="row" style="margin-bottom:12px;">
+                <h3 style="margin:0;">Organizations</h3>
+                <button id="showCreateOrg" class="dt-add-btn">+ New Organization</button>
+              </div>
+              <div id="orgList" class="list"></div>
+            </div>
+
+            <!-- Create Org Form -->
+            <div id="createOrgForm" class="card" style="display:none; margin-top:12px;">
+              <h3>Create New Organization</h3>
+              <label class="dt-label">Organization Name</label>
+              <input id="orgName" placeholder="e.g. LunaTax Solutions" />
+              <label class="dt-label">URL Slug</label>
+              <input id="orgSlug" placeholder="e.g. lunatax" />
+              <div class="small muted" style="margin-top:2px;">Used in URLs: /org/<b>slug</b>/admin</div>
+              <label class="dt-label">Admin Name</label>
+              <input id="orgAdminName" placeholder="Admin full name" />
+              <label class="dt-label">Admin Email</label>
+              <input id="orgAdminEmail" type="email" placeholder="admin@org.com" />
+              <label class="dt-label">Admin Password</label>
+              <input id="orgAdminPw" type="password" placeholder="Initial password" value="admin" />
+              <div class="row" style="margin-top:14px;">
+                <button id="createOrgBtn" class="primary" style="width:auto;">Create Organization</button>
+                <button id="cancelCreateOrg" style="width:auto;">Cancel</button>
+              </div>
+              <div id="createOrgFeedback" class="small muted" style="margin-top:8px;"></div>
+            </div>
+
+            <!-- Org Detail Panel -->
+            <div id="orgDetailPanel" class="card" style="display:none; margin-top:12px;">
+              <div class="row" style="margin-bottom:10px;">
+                <div>
+                  <h3 id="orgDetailName" style="margin:0;"></h3>
+                  <div id="orgDetailMeta" class="small muted"></div>
+                </div>
+                <div class="row" style="gap:6px;">
+                  <button id="openOrgAdmin" style="width:auto;">Open Admin Panel</button>
+                  <button id="deleteOrgBtn" class="danger-btn" style="width:auto;">Delete Org</button>
+                  <button id="closeOrgDetail" style="width:auto;">Close</button>
+                </div>
+              </div>
+              <h4>Staff & Admins</h4>
+              <div id="orgUsersList" class="list"></div>
+              <h4>Add User</h4>
+              <div class="row" style="gap:8px; flex-wrap:wrap;">
+                <input id="addUserName" placeholder="Name" style="width:auto; min-width:140px;" />
+                <input id="addUserEmail" placeholder="Email" style="width:auto; min-width:180px;" />
+                <input id="addUserPw" type="password" placeholder="Password" value="changeme" style="width:auto; min-width:120px;" />
+                <select id="addUserRole" style="width:auto; min-width:120px;">
+                  <option value="Staff">Staff</option>
+                  <option value="OrgAdmin">OrgAdmin</option>
+                </select>
+                <button id="addUserBtn" class="primary" style="width:auto;">Add User</button>
+              </div>
+              <div id="addUserFeedback" class="small muted" style="margin-top:6px;"></div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script src="/master.js"></script>
+  </body>
+</html>

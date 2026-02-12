@@ -1,3 +1,10 @@
+// Extract org slug from URL: /org/{slug}/portal
+const ORG_SLUG = (() => {
+  const m = window.location.pathname.match(/^\/org\/([^/]+)\/portal/);
+  return m ? m[1] : '';
+})();
+const API_BASE = `/api/org/${ORG_SLUG}`;
+
 const state = { session: null, portalCode: '', theme: 'light', view: 'overview', fileFolder: null, popupDismissed: false, meta: null, questionnaire: {}, meetingRoom: '' };
 const JITSI_BASE = 'https://jitsi.guildspeak.com';
 const $ = (id) => document.getElementById(id);
@@ -70,7 +77,7 @@ function renderDeadlines() {
 
 async function loadMeta() {
   try {
-    state.meta = await jfetch('/api/meta');
+    state.meta = await jfetch(`${API_BASE}/meta`);
   } catch {
     state.meta = null;
   }
@@ -240,7 +247,7 @@ async function markRequestComplete(id) {
   try {
     const req = (state.session.requests || []).find((r) => r.id === id);
     if (!req) return false;
-    await jfetch(`/api/client/${state.session.id}/requests/${id}`, {
+    await jfetch(`${API_BASE}/client/${state.session.id}/requests/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ portalCode: state.portalCode, completed: true })
@@ -295,7 +302,7 @@ function renderFileManager() {
   document.querySelectorAll('.viewPortalFileBtn').forEach((el) => {
     el.onclick = () => {
       const id = el.getAttribute('data-id');
-      const u = `/api/files/${encodeURIComponent(state.session.id)}/${encodeURIComponent(id)}?portalCode=${encodeURIComponent(state.portalCode)}`;
+      const u = `${API_BASE}/files/${encodeURIComponent(state.session.id)}/${encodeURIComponent(id)}?portalCode=${encodeURIComponent(state.portalCode)}`;
       window.open(u, '_blank', 'noopener');
     };
   });
@@ -361,7 +368,7 @@ function render() {
   document.querySelectorAll('#recentFiles .viewPortalFileBtn').forEach((el) => {
     el.onclick = () => {
       const id = el.getAttribute('data-id');
-      const u = `/api/files/${encodeURIComponent(state.session.id)}/${encodeURIComponent(id)}?portalCode=${encodeURIComponent(state.portalCode)}`;
+      const u = `${API_BASE}/files/${encodeURIComponent(state.session.id)}/${encodeURIComponent(id)}?portalCode=${encodeURIComponent(state.portalCode)}`;
       window.open(u, '_blank', 'noopener');
     };
   });
@@ -382,7 +389,7 @@ async function loadSession() {
       render();
       return;
     }
-    state.session = await jfetch(`/api/client/session?portalCode=${encodeURIComponent(state.portalCode)}`);
+    state.session = await jfetch(`${API_BASE}/client/session?portalCode=${encodeURIComponent(state.portalCode)}`);
     try { localStorage.setItem('nexus.portal.code', state.portalCode); } catch {}
     state.popupDismissed = false;
     setError('');
@@ -399,7 +406,7 @@ async function upload(file, source = 'client-upload', category = null, taxYear =
   try {
     setError('');
     const base64 = await toBase64(file);
-    await jfetch(`/api/client/${state.session.id}/upload`, {
+    await jfetch(`${API_BASE}/client/${state.session.id}/upload`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         portalCode: state.portalCode,
@@ -462,7 +469,11 @@ $('backToClientFolders').onclick = () => {
 
 const params = new URLSearchParams(window.location.search);
 const qpCode = params.get('code');
-if (params.get('from') === 'admin') $('adminJump').style.display = 'block';
+if (params.get('from') === 'admin') {
+  $('adminJump').style.display = 'block';
+  const adminLink = $('adminBackLink');
+  if (adminLink && ORG_SLUG) adminLink.href = `/org/${ORG_SLUG}/admin`;
+}
 state.portalCode = qpCode || (() => { try { return localStorage.getItem('nexus.portal.code') || ''; } catch { return ''; } })();
 if (state.portalCode) { try { localStorage.setItem('nexus.portal.code', state.portalCode); } catch {} }
 
